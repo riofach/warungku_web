@@ -1,0 +1,101 @@
+# Laravel Default
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+
+# IDE
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+
+# Test
+/.phpunit.cache
+phpunit.result.cache
+
+# Auth
+/auth.json
+
+# Dependencies
+/node_modules
+/vendor
+
+# Build
+/public/build
+/public/hot
+/public/storage
+
+# Storage
+/storage/*.key
+/storage/pail
+/storage/debugbar/
+/storage/logs/*.log
+
+# Homestead
+Homestead.json
+Homestead.yaml
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Environment files - NEVER commit these!
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Compiled assets
+/public/css/
+/public/js/
+/public/mix-manifest.json
+
+# Cache
+/bootstrap/cache/*.php
+!bootstrap/cache/.gitignore
+
+# SQLite database
+/database/*.sqlite
+/database/*.sqlite-journal
+
+# Package lock (optional - can include if you want deterministic builds)
+# composer.lock
+# package-lock.json
+
+# IDE specific files
+*.swp
+*.swo
+*~
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+.phpunit.result.cache
+coverage/
+.coverage
+
+# Laravel Sail
+docker-compose.override.yml
+
+# Vapor
+.vapor/
+
+# Laravel Telescope
+/public/vendor/telescope/
+
+# Laravel Horizon
+/public/vendor/horizon/
