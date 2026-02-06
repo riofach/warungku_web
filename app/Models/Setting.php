@@ -3,12 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Setting extends Model
 {
-    use HasUuids;
-
+    // NO HasUuids needed because 'key' is primary and manually set string
+    
+    protected $primaryKey = 'key';
     protected $keyType = 'string';
     public $incrementing = false;
 

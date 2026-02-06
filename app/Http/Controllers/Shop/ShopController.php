@@ -23,9 +23,9 @@ class ShopController extends Controller
         $query = Item::active()->with('category');
 
         // Filter by category
-        if ($request->has('category') && $request->category) {
-            $query->where('category_id', $request->category);
-        }
+        $query->when($request->category_id, function ($q, $categoryId) {
+            return $q->where('category_id', $categoryId);
+        });
 
         // Search
         if ($request->has('q') && $request->q) {

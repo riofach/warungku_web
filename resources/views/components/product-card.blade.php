@@ -37,7 +37,7 @@
         
         <div class="mt-auto">
             <div class="font-bold text-primary mb-3">
-                Rp {{ number_format($item->sell_price, 0, ',', '.') }}
+                {{ \App\Helpers\FormatHelper::rupiah($item->sell_price) }}
             </div>
 
             <button 
