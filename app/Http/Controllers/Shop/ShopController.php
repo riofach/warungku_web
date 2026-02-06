@@ -41,9 +41,9 @@ class ShopController extends Controller
         });
 
         // Search
-        if ($request->has('q') && $request->q) {
-            $query->where('name', 'like', '%' . $request->q . '%');
-        }
+        $query->when($request->search, function ($q, $search) {
+            $q->where('name', 'ilike', '%' . $search . '%');
+        });
 
         // Pagination
         $items = $query->orderBy('name')->paginate(12);

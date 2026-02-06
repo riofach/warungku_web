@@ -34,6 +34,12 @@
 
                 <!-- Search (Desktop) -->
                 <form action="{{ route('home') }}" method="GET" class="hidden md:flex flex-1 max-w-md mx-8">
+                    @if(request('category_id'))
+                        <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                    @endif
+                    @if(request('category'))
+                        <input type="hidden" name="category" value="{{ request('category') }}">
+                    @endif
 
                     <div class="relative w-full">
                         <input 
@@ -41,7 +47,8 @@
                             name="search" 
                             placeholder="Cari produk..."
                             value="{{ request('search') }}"
-                            class="input-field !pl-14 pr-4 py-2"
+                            class="input-field !pl-14 pr-4 py-2.5"
+                            @input.debounce.500ms="$el.form.submit()"
                         >
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -66,13 +73,20 @@
             <!-- Search (Mobile) -->
             <div class="md:hidden pb-3">
                 <form action="{{ route('home') }}" method="GET">
+                    @if(request('category_id'))
+                        <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                    @endif
+                    @if(request('category'))
+                        <input type="hidden" name="category" value="{{ request('category') }}">
+                    @endif
                     <div class="relative">
                         <input 
                             type="text" 
                             name="search" 
                             placeholder="Cari produk..."
                             value="{{ request('search') }}"
-                            class="input-field !pl-12 pr-4 py-2 text-sm"
+                            class="input-field !pl-12 pr-4 py-2.5 text-sm"
+                            @input.debounce.500ms="$el.form.submit()"
                         >
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>

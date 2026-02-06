@@ -105,11 +105,39 @@ class ShopTest extends TestCase
         Item::factory()->create(['name' => 'Apple', 'category_id' => $category->id, 'is_active' => true]);
         Item::factory()->create(['name' => 'Banana', 'category_id' => $category->id, 'is_active' => true]);
 
-        $response = $this->get('/?q=Apple');
+        // Updated query parameter to 'search' as per Story 9.3
+        $response = $this->get('/?search=Apple');
 
         $response->assertStatus(200);
         $response->assertSee('Apple');
         $response->assertDontSee('Banana');
+    }
+
+    public function test_search_is_case_insensitive()
+    {
+        $category = Category::factory()->create();
+        Item::factory()->create(['name' => 'Apple', 'category_id' => $category->id, 'is_active' => true]);
+
+        $response = $this->get('/?search=apple'); // Lowercase search
+
+        $response->assertStatus(200);
+        $response->assertSee('Apple');
+    }
+
+    public function test_search_respects_category_filter()
+    {
+        $fruitCat = Category::factory()->create(['name' => 'Fruits']);
+        $techCat = Category::factory()->create(['name' => 'Tech']);
+
+        Item::factory()->create(['name' => 'Apple Watch', 'category_id' => $techCat->id, 'is_active' => true]);
+        Item::factory()->create(['name' => 'Apple Fruit', 'category_id' => $fruitCat->id, 'is_active' => true]);
+
+        // Search "Apple" in "Fruits" category
+        $response = $this->get('/?search=Apple&category_id=' . $fruitCat->id);
+
+        $response->assertStatus(200);
+        $response->assertSee('Apple Fruit');
+        $response->assertDontSee('Apple Watch');
     }
 
     public function test_homepage_shows_out_of_stock_badge()
@@ -173,8 +201,18 @@ class ShopTest extends TestCase
         $response = $this->get('/?category_id=abc');
 
         $response->assertStatus(200);
-        // Should just show empty state or all items depending on how casting works (int)'abc' is 0
-        // Since no category has ID 0, it should probably show empty state "Belum ada produk..."
+        // Should just show empty state "Belum ada produk..."
         $response->assertSee('Belum ada produk');
+    }
+
+    public function test_shows_specific_empty_state_for_search()
+    {
+        Item::factory()->create(['name' => 'Apple', 'is_active' => true]);
+
+        $response = $this->get('/?search=Zebra');
+
+        $response->assertStatus(200);
+        $response->assertSeeText('Tidak ditemukan produk untuk "Zebra"', false);
+        $response->assertDontSee('Apple');
     }
 }

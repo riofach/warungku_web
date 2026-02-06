@@ -51,13 +51,29 @@
                 🔍
             </div>
             <h2 class="text-xl font-bold text-gray-900 mb-2">
-                {{ request('category') || request('category_id') ? 'Belum ada produk di kategori ini' : 'Produk tidak ditemukan' }}
+                @if(request('search'))
+                    Tidak ditemukan produk untuk "{{ request('search') }}"
+                @elseif(request('category') || request('category_id'))
+                    Belum ada produk di kategori ini
+                @else
+                    Produk tidak ditemukan
+                @endif
             </h2>
             <p class="text-gray-500 max-w-xs mx-auto mb-6">
-                {{ request('category') || request('category_id') ? 'Silakan pilih kategori lain atau lihat semua produk.' : 'Maaf, kami tidak dapat menemukan produk yang Anda cari.' }}
+                @if(request('search'))
+                    Silakan coba kata kunci lain atau lihat semua produk.
+                @elseif(request('category') || request('category_id'))
+                    Silakan pilih kategori lain atau lihat semua produk.
+                @else
+                    Maaf, kami tidak dapat menemukan produk yang Anda cari.
+                @endif
             </p>
-            <a href="{{ route('home') }}" class="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                Lihat Semua Produk
+            <a href="{{ route('home', array_filter(['category_id' => request('category_id'), 'category' => request('category')])) }}" class="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                @if(request('search') && (request('category') || request('category_id')))
+                    Lihat Semua di Kategori Ini
+                @else
+                    Lihat Semua Produk
+                @endif
             </a>
         </div>
     @else
