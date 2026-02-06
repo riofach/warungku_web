@@ -215,4 +215,15 @@ class ShopTest extends TestCase
         $response->assertSeeText('Tidak ditemukan produk untuk "Zebra"', false);
         $response->assertDontSee('Apple');
     }
+
+    public function test_homepage_includes_shopping_guide_component()
+    {
+        $response = $this->get('/');
+
+        $response->assertStatus(200);
+        // Should contain the modal title
+        $response->assertSee('Cara Belanja di Warung Luthfan');
+        // Should contain Alpine.js x-data initialization
+        $response->assertSee('x-data');
+    }
 }

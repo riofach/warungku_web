@@ -88,5 +88,8 @@
             {{ $items->appends(request()->query())->links() }}
         </div>
     @endif
+
+    <!-- Shopping Guide Modal -->
+    <x-shopping-guide-modal />
 </div>
 @endsection
