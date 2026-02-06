@@ -5,92 +5,67 @@
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-primary to-primary-dark rounded-2xl p-6 md:p-8 mb-6 text-white">
-        <h1 class="text-2xl md:text-3xl font-bold mb-2">Selamat datang di WarungKu! 👋</h1>
-        <p class="text-white/80 text-sm md:text-base">Belanja kebutuhan harian Anda dengan mudah. Gratis ongkir ke seluruh perumahan!</p>
-        <div class="flex items-center gap-2 mt-4">
-            <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">🚚 FREE DELIVERY</span>
-            <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">💳 QRIS & Tunai</span>
+    <div class="bg-gradient-to-r from-primary to-blue-700 rounded-2xl p-6 md:p-8 mb-6 text-white shadow-lg relative overflow-hidden">
+        <div class="relative z-10">
+            <h1 class="text-2xl md:text-3xl font-bold mb-2">Selamat datang di WarungLuthfan! 👋</h1>
+            <p class="text-white/90 text-sm md:text-base mb-4">Belanja kebutuhan harian Anda dengan mudah.</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs md:text-sm font-medium flex items-center gap-1">
+                    🚚 Gratis Ongkir
+                </span>
+                <span class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs md:text-sm font-medium flex items-center gap-1">
+                    ⚡ Proses Cepat
+                </span>
+            </div>
         </div>
+        <!-- Decorative Circle -->
+        <div class="absolute -right-8 -bottom-16 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
     </div>
 
-    <!-- Category Pills -->
-    <div class="mb-6 overflow-x-auto scrollbar-hide">
-        <div class="flex gap-2 pb-2">
-            <a href="{{ route('shop.index') }}" 
-               class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors {{ !request('category') ? 'bg-primary text-white' : 'bg-surface border border-border text-text-secondary hover:border-primary' }}">
+    <!-- Category Section -->
+    <div class="mb-6">
+        <div class="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+            <a href="{{ route('home') }}" 
+               class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border
+               {{ !request('category') 
+                   ? 'bg-primary border-primary text-white shadow-md' 
+                   : 'bg-white border-gray-200 text-gray-600 hover:border-primary hover:text-primary' }}">
                 Semua
             </a>
             @foreach($categories as $category)
-                <a href="{{ route('shop.index', ['category' => $category->id]) }}" 
-                   class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors {{ request('category') == $category->id ? 'bg-primary text-white' : 'bg-surface border border-border text-text-secondary hover:border-primary' }}">
+                <a href="{{ route('home', ['category' => $category->id]) }}" 
+                   class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border
+                   {{ request('category') == $category->id 
+                       ? 'bg-primary border-primary text-white shadow-md' 
+                       : 'bg-white border-gray-200 text-gray-600 hover:border-primary hover:text-primary' }}">
                     {{ $category->name }}
                 </a>
             @endforeach
         </div>
     </div>
 
-    <!-- Products Grid -->
+    <!-- Product Grid -->
     @if($items->isEmpty())
-        <div class="text-center py-12">
-            <div class="text-6xl mb-4">🔍</div>
-            <h2 class="text-xl font-semibold mb-2">Produk tidak ditemukan</h2>
-            <p class="text-text-secondary">Coba kata kunci lain atau lihat semua produk</p>
-            <a href="{{ route('shop.index') }}" class="btn-primary inline-block mt-4">
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-4xl mb-4">
+                🔍
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Produk tidak ditemukan</h2>
+            <p class="text-gray-500 max-w-xs mx-auto mb-6">Maaf, kami tidak dapat menemukan produk yang Anda cari.</p>
+            <a href="{{ route('home') }}" class="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
                 Lihat Semua Produk
             </a>
         </div>
     @else
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             @foreach($items as $item)
-                <div class="card group hover:shadow-md transition-shadow">
-                    <!-- Product Image -->
-                    <div class="aspect-square bg-background rounded-lg mb-3 overflow-hidden">
-                        @if($item->image_url)
-                            <img src="{{ $item->image_url }}" alt="{{ $item->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
-                        @else
-                            <div class="w-full h-full flex items-center justify-center text-4xl">
-                                📦
-                            </div>
-                        @endif
-                    </div>
-
-                    <!-- Product Info -->
-                    <h3 class="font-medium text-sm mb-1 line-clamp-2">{{ $item->name }}</h3>
-                    
-                    @if($item->category)
-                        <span class="text-xs text-text-tertiary">{{ $item->category->name }}</span>
-                    @endif
-
-                    <div class="flex items-center justify-between mt-2">
-                        <span class="font-bold text-primary">{{ $item->formatted_price }}</span>
-                        
-                        <!-- Stock Indicator -->
-                        @if($item->isOutOfStock())
-                            <span class="text-xs text-stock-critical font-medium">Habis</span>
-                        @elseif($item->isStockLow())
-                            <span class="text-xs text-stock-warning font-medium">Sisa {{ $item->stock }}</span>
-                        @endif
-                    </div>
-
-                    <!-- Add to Cart Button -->
-                    <form action="{{ route('cart.add') }}" method="POST" class="mt-3">
-                        @csrf
-                        <input type="hidden" name="item_id" value="{{ $item->id }}">
-                        <button 
-                            type="submit" 
-                            @if($item->isOutOfStock()) disabled @endif
-                            class="w-full py-2 rounded-lg text-sm font-semibold transition-colors {{ $item->isOutOfStock() ? 'bg-background text-text-tertiary cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-dark' }}"
-                        >
-                            @if($item->isOutOfStock())
-                                Stok Habis
-                            @else
-                                + Keranjang
-                            @endif
-                        </button>
-                    </form>
-                </div>
+                <x-product-card :item="$item" />
             @endforeach
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-8">
+            {{ $items->appends(request()->query())->links() }}
         </div>
     @endif
 </div>

@@ -1,8 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ShopController;
+use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\CartController;
+
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\TrackingController;
 
@@ -16,8 +17,9 @@ use App\Http\Controllers\TrackingController;
 */
 
 // Shop Routes
-Route::get('/', [ShopController::class, 'index'])->name('shop.index');
-Route::get('/product/{item}', [ShopController::class, 'show'])->name('shop.show');
+Route::get('/', [ShopController::class, 'index'])->name('home');
+// Route::get('/product/{item}', [ShopController::class, 'show'])->name('shop.show'); // Moved to later story or removed for now as not in this story requirements
+
 
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');

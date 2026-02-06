@@ -7,7 +7,7 @@
     <title>@yield('title', 'WarungKu') - Belanja Mudah</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
+    <link rel="icon" type="image/png" href="{{ asset('logo-warung.png') }}">
     
     <!-- Inter Font from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,22 +25,25 @@
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-between h-16">
                 <!-- Logo -->
-                <a href="{{ route('shop.index') }}" class="flex items-center gap-2">
-                    <span class="text-2xl">🏪</span>
-                    <span class="text-xl font-bold text-primary">WarungKu</span>
+                <a href="{{ route('home') }}" class="flex items-center gap-3 group">
+                    <div class="relative w-10 h-10 shrink-0 transition-transform group-hover:scale-105">
+                        <img src="{{ asset('logo-warung.png') }}" alt="WarungLuthfan Logo" class="w-10 h-10 object-contain drop-shadow-sm">
+                    </div>
+                    <span class="text-xl font-bold text-primary tracking-tight">WarungLuthfan</span>
                 </a>
 
                 <!-- Search (Desktop) -->
-                <form action="{{ route('shop.index') }}" method="GET" class="hidden md:flex flex-1 max-w-md mx-8">
+                <form action="{{ route('home') }}" method="GET" class="hidden md:flex flex-1 max-w-md mx-8">
+
                     <div class="relative w-full">
                         <input 
                             type="text" 
                             name="search" 
                             placeholder="Cari produk..."
                             value="{{ request('search') }}"
-                            class="input-field pl-10 pr-4 py-2"
+                            class="input-field !pl-14 pr-4 py-2"
                         >
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </div>
@@ -62,16 +65,16 @@
 
             <!-- Search (Mobile) -->
             <div class="md:hidden pb-3">
-                <form action="{{ route('shop.index') }}" method="GET">
+                <form action="{{ route('home') }}" method="GET">
                     <div class="relative">
                         <input 
                             type="text" 
                             name="search" 
                             placeholder="Cari produk..."
                             value="{{ request('search') }}"
-                            class="input-field pl-10 pr-4 py-2 text-sm"
+                            class="input-field !pl-12 pr-4 py-2 text-sm"
                         >
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </div>
@@ -111,8 +114,9 @@
     <!-- Bottom Navigation (Mobile) -->
     <nav class="md:hidden sticky bottom-0 bg-surface border-t border-border safe-area-inset-bottom">
         <div class="grid grid-cols-3 gap-1 p-2">
-            <a href="{{ route('shop.index') }}" class="flex flex-col items-center py-2 px-4 rounded-lg {{ request()->routeIs('shop.*') ? 'text-primary bg-primary/10' : 'text-text-secondary hover:bg-background' }}">
+            <a href="{{ route('home') }}" class="flex flex-col items-center py-2 px-4 rounded-lg {{ request()->routeIs('home') ? 'text-primary bg-primary/10' : 'text-text-secondary hover:bg-background' }}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
                 <span class="text-xs mt-1 font-medium">Beranda</span>
@@ -142,11 +146,11 @@
         <div class="container mx-auto px-4 py-6">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-2">
-                    <span class="text-xl">🏪</span>
-                    <span class="font-bold text-primary">WarungKu</span>
+                    <img src="{{ asset('logo-warung.png') }}" alt="WarungLuthfan Logo" class="w-8 h-8 object-contain">
+                    <span class="font-bold text-primary">WarungLuthfan</span>
                 </div>
                 <p class="text-text-secondary text-sm">
-                    &copy; {{ date('Y') }} WarungKu Digital. Dibuat dengan ❤️
+                    &copy; {{ date('Y') }} WarungLuthfan. Dibuat dengan ❤️
                 </p>
                 <div class="flex gap-4">
                     <a href="{{ route('tracking.index') }}" class="text-text-secondary hover:text-primary text-sm">
