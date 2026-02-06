@@ -27,15 +27,15 @@
         <div class="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
             <a href="{{ route('home') }}" 
                class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border
-               {{ !request('category_id') 
+               {{ !request('category') && !request('category_id') 
                    ? 'bg-primary border-primary text-white shadow-md' 
                    : 'bg-white border-gray-200 text-gray-600 hover:border-primary hover:text-primary' }}">
                 Semua
             </a>
             @foreach($categories as $category)
-                <a href="{{ route('home', ['category_id' => $category->id]) }}" 
+                <a href="{{ route('home', ['category' => $category->name]) }}" 
                    class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border
-                   {{ request('category_id') == $category->id 
+                   {{ request('category') == $category->name || request('category_id') == $category->id
                        ? 'bg-primary border-primary text-white shadow-md' 
                        : 'bg-white border-gray-200 text-gray-600 hover:border-primary hover:text-primary' }}">
                     {{ $category->name }}
@@ -51,10 +51,10 @@
                 🔍
             </div>
             <h2 class="text-xl font-bold text-gray-900 mb-2">
-                {{ request('category_id') ? 'Belum ada produk di kategori ini' : 'Produk tidak ditemukan' }}
+                {{ request('category') || request('category_id') ? 'Belum ada produk di kategori ini' : 'Produk tidak ditemukan' }}
             </h2>
             <p class="text-gray-500 max-w-xs mx-auto mb-6">
-                {{ request('category_id') ? 'Silakan pilih kategori lain atau lihat semua produk.' : 'Maaf, kami tidak dapat menemukan produk yang Anda cari.' }}
+                {{ request('category') || request('category_id') ? 'Silakan pilih kategori lain atau lihat semua produk.' : 'Maaf, kami tidak dapat menemukan produk yang Anda cari.' }}
             </p>
             <a href="{{ route('home') }}" class="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
                 Lihat Semua Produk

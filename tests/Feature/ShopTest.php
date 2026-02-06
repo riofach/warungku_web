@@ -41,6 +41,22 @@ class ShopTest extends TestCase
         $response->assertSee('Beras 5kg');
     }
 
+    public function test_homepage_filters_items_by_category_name()
+    {
+        $category1 = Category::factory()->create(['name' => 'Sembako']);
+        $category2 = Category::factory()->create(['name' => 'Minuman']);
+        
+        $item1 = Item::factory()->create(['category_id' => $category1->id, 'name' => 'Beras', 'is_active' => true]);
+        $item2 = Item::factory()->create(['category_id' => $category2->id, 'name' => 'Cola', 'is_active' => true]);
+
+        // Filter by Name
+        $response = $this->get('/?category=Sembako');
+
+        $response->assertStatus(200);
+        $response->assertSee('Beras');
+        $response->assertDontSee('Cola');
+    }
+
     public function test_homepage_filters_items_by_category_id()
     {
         $category1 = Category::factory()->create(['name' => 'Category 1']);
@@ -128,5 +144,37 @@ class ShopTest extends TestCase
         $response->assertViewHas('items', function ($items) {
             return $items->count() === 12;
         });
+    }
+
+    public function test_categories_with_only_inactive_items_are_not_shown()
+    {
+        // Category with active items
+        $activeCat = Category::factory()->create(['name' => 'Active Cat']);
+        Item::factory()->create(['category_id' => $activeCat->id, 'is_active' => true]);
+
+        // Category with inactive items only
+        $inactiveCat = Category::factory()->create(['name' => 'Inactive Cat']);
+        Item::factory()->create(['category_id' => $inactiveCat->id, 'is_active' => false]);
+
+        // Category with no items
+        Category::factory()->create(['name' => 'Empty Cat']);
+
+        $response = $this->get('/');
+
+        $response->assertStatus(200);
+        $response->assertSee('Active Cat');
+        $response->assertDontSee('Inactive Cat');
+        $response->assertDontSee('Empty Cat');
+    }
+
+    public function test_filter_handles_invalid_category_id_gracefully()
+    {
+        // Should cast 'abc' to 0 or similar and return empty result or ignore, but definitely not 500 error
+        $response = $this->get('/?category_id=abc');
+
+        $response->assertStatus(200);
+        // Should just show empty state or all items depending on how casting works (int)'abc' is 0
+        // Since no category has ID 0, it should probably show empty state "Belum ada produk..."
+        $response->assertSee('Belum ada produk');
     }
 }

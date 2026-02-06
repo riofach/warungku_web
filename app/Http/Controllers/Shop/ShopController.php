@@ -14,8 +14,10 @@ class ShopController extends Controller
      */
     public function index(Request $request)
     {
-        // Fetch categories that have items
-        $categories = Category::has('items')->withCount(['items' => function ($query) {
+        // Fetch categories that have ACTIVE items
+        $categories = Category::whereHas('items', function ($query) {
+            $query->active();
+        })->withCount(['items' => function ($query) {
             $query->active();
         }])->get();
 
@@ -23,7 +25,18 @@ class ShopController extends Controller
         $query = Item::active()->with('category');
 
         // Filter by category
+        $query->when($request->category, function ($q, $categoryName) {
+            return $q->whereHas('category', function ($sq) use ($categoryName) {
+                $sq->where('name', $categoryName);
+            });
+        });
+
         $query->when($request->category_id, function ($q, $categoryId) {
+            // Validate UUID if using UUIDs
+            if (!\Illuminate\Support\Str::isUuid($categoryId)) {
+                 // Return empty result for invalid UUID format
+                 return $q->whereRaw('1 = 0');
+            }
             return $q->where('category_id', $categoryId);
         });
 
