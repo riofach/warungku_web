@@ -3,7 +3,7 @@
 @section('title', 'Keranjang')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
+<div class="container mx-auto px-4 py-6" x-data="cartPage()">
     <h1 class="text-2xl font-bold mb-6">Keranjang Belanja</h1>
 
     @if(empty($cartItems))
@@ -11,81 +11,256 @@
             <div class="text-6xl mb-4">🛒</div>
             <h2 class="text-xl font-semibold mb-2">Keranjang kosong</h2>
             <p class="text-text-secondary mb-4">Belum ada produk di keranjang Anda</p>
-            <a href="{{ route('shop.index') }}" class="btn-primary inline-block">
+            <a href="{{ route('home') }}" class="btn-primary inline-block">
                 Mulai Belanja
             </a>
         </div>
     @else
-        <div class="grid md:grid-cols-3 gap-6">
+        <div class="grid md:grid-cols-3 gap-6" x-show="cartItems.length > 0">
             <!-- Cart Items -->
             <div class="md:col-span-2 space-y-4">
-                @foreach($cartItems as $item)
-                    <div class="card flex gap-4">
-                        <div class="w-20 h-20 bg-background rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
-                            📦
+                <template x-for="(item, index) in cartItems" :key="item.id">
+                    <div class="card flex gap-4 transition-all duration-300" :id="'item-' + item.id">
+                        <!-- Image -->
+                        <div class="w-20 h-20 bg-background rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+                             <template x-if="item.image_url">
+                                <img :src="item.image_url" :alt="item.name" class="w-full h-full object-cover">
+                             </template>
+                             <template x-if="!item.image_url">
+                                <span class="text-2xl">📦</span>
+                             </template>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="font-medium">{{ $item['name'] }}</h3>
-                            <p class="text-primary font-semibold">Rp {{ number_format($item['price'], 0, ',', '.') }}</p>
+
+                        <!-- Content -->
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-medium text-lg" x-text="item.name"></h3>
+                                <p class="text-primary font-semibold" x-text="formatRupiah(item.price)"></p>
+                            </div>
                             
-                            <div class="flex items-center justify-between mt-2">
+                            <div class="flex items-center justify-between mt-3">
                                 <!-- Quantity Control -->
-                                <div class="flex items-center gap-2">
-                                    <form action="{{ route('cart.update', $item['id']) }}" method="POST" class="flex items-center">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="quantity" value="{{ $item['quantity'] - 1 }}">
-                                        <button type="submit" class="w-8 h-8 rounded-lg bg-background flex items-center justify-center hover:bg-border">-</button>
-                                    </form>
-                                    <span class="w-8 text-center font-medium">{{ $item['quantity'] }}</span>
-                                    <form action="{{ route('cart.update', $item['id']) }}" method="POST" class="flex items-center">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="quantity" value="{{ $item['quantity'] + 1 }}">
-                                        <button type="submit" class="w-8 h-8 rounded-lg bg-background flex items-center justify-center hover:bg-border">+</button>
-                                    </form>
+                                <div class="flex items-center gap-1 bg-background rounded-lg p-1 border border-border w-fit">
+                                    <button 
+                                        @click="updateQuantity(item.id, parseInt(item.quantity) - 1)" 
+                                        class="w-8 h-8 rounded-md hover:bg-gray-200 flex items-center justify-center text-lg font-bold transition-colors disabled:opacity-50"
+                                        :disabled="item.loading || item.quantity <= 1"
+                                    >-</button>
+                                    
+                                    <input 
+                                        type="number" 
+                                        x-model.number="item.quantity"
+                                        @change="updateQuantity(item.id, parseInt($el.value))"
+                                        @keyup.enter="$el.blur()"
+                                        class="w-12 text-center font-medium bg-transparent border-none p-0 focus:ring-0 appearance-none [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                        min="1"
+                                        :max="item.stock_max"
+                                        :disabled="item.loading"
+                                    >
+                                    
+                                    <button 
+                                        @click="updateQuantity(item.id, parseInt(item.quantity) + 1)" 
+                                        class="w-8 h-8 rounded-md hover:bg-gray-200 flex items-center justify-center text-lg font-bold transition-colors disabled:opacity-50"
+                                        :disabled="item.loading || (item.stock_max && item.quantity >= item.stock_max)"
+                                    >+</button>
                                 </div>
 
                                 <!-- Remove -->
-                                <form action="{{ route('cart.remove', $item['id']) }}" method="POST">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-error hover:underline text-sm">Hapus</button>
-                                </form>
+                                <button 
+                                    @click="removeItem(item.id)" 
+                                    class="text-error hover:text-red-700 text-sm font-medium flex items-center gap-1 transition-colors"
+                                    :disabled="item.loading"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    Hapus
+                                </button>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <span class="font-bold">Rp {{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }}</span>
+
+                        <!-- Subtotal -->
+                        <div class="text-right hidden sm:block">
+                            <span class="font-bold text-lg" x-text="formatRupiah(item.price * item.quantity)"></span>
                         </div>
                     </div>
-                @endforeach
+                </template>
             </div>
 
             <!-- Order Summary -->
-            <div class="card h-fit sticky top-24">
-                <h2 class="font-bold text-lg mb-4">Ringkasan Pesanan</h2>
-                
-                <div class="space-y-3 mb-4">
-                    <div class="flex justify-between text-text-secondary">
-                        <span>Subtotal</span>
-                        <span>Rp {{ number_format($total, 0, ',', '.') }}</span>
+            <div class="h-fit sticky top-24">
+                <div class="card p-6">
+                    <h2 class="font-bold text-lg mb-4 pb-2 border-b border-border">Ringkasan Pesanan</h2>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between text-text-secondary">
+                            <span>Total Item</span>
+                            <span x-text="cartCount + ' barang'"></span>
+                        </div>
+                        <div class="flex justify-between text-text-secondary">
+                            <span>Subtotal</span>
+                            <span x-text="cartTotalFormatted"></span>
+                        </div>
+                        <div class="flex justify-between text-text-secondary">
+                            <span>Ongkir</span>
+                            <span class="text-success font-medium">GRATIS</span>
+                        </div>
+                        <div class="h-px bg-border my-2"></div>
+                        <div class="flex justify-between font-bold text-xl">
+                            <span>Total</span>
+                            <span class="text-primary" x-text="cartTotalFormatted"></span>
+                        </div>
                     </div>
-                    <div class="flex justify-between text-text-secondary">
-                        <span>Ongkir</span>
-                        <span class="text-secondary font-medium">GRATIS</span>
-                    </div>
-                    <hr class="border-border">
-                    <div class="flex justify-between font-bold text-lg">
-                        <span>Total</span>
-                        <span class="text-primary">Rp {{ number_format($total, 0, ',', '.') }}</span>
-                    </div>
-                </div>
 
-                <a href="{{ route('checkout.index') }}" class="btn-primary block text-center">
-                    Checkout
-                </a>
+                    <a href="{{ route('checkout.index') }}" class="btn-primary block text-center w-full py-3 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+                        Lanjut ke Checkout
+                    </a>
+                    
+                    <a href="{{ route('home') }}" class="block text-center mt-4 text-sm text-text-secondary hover:text-primary transition-colors">
+                        Lanjut Belanja
+                    </a>
+                </div>
             </div>
+        </div>
+
+        <!-- Empty State (Hidden by default, shown via Alpine) -->
+        <div x-show="cartItems.length === 0" class="text-center py-20" style="display: none;">
+            <div class="text-7xl mb-6 animate-bounce">🛒</div>
+            <h2 class="text-2xl font-bold mb-3">Keranjang kosong</h2>
+            <p class="text-text-secondary mb-8">Belum ada produk di keranjang Anda</p>
+            <a href="{{ route('home') }}" class="btn-primary inline-flex items-center gap-2 px-8 py-3 rounded-full">
+                <span>Mulai Belanja</span>
+            </a>
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('cartPage', () => ({
+            cartItems: @json(array_values($cartItems)),
+            cartTotal: {{ $total }},
+            
+            get cartCount() {
+                return this.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+            },
+
+            get cartTotalFormatted() {
+                return this.formatRupiah(this.cartTotal);
+            },
+
+            formatRupiah(amount) {
+                return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+            },
+
+            async updateQuantity(itemId, newQuantity) {
+                if (newQuantity < 1) return;
+                
+                // Find item
+                const itemIndex = this.cartItems.findIndex(i => i.id === itemId);
+                if (itemIndex === -1) return;
+                const item = this.cartItems[itemIndex];
+                
+                // Optimistic UI Update
+                const oldQuantity = item.quantity;
+                const oldTotal = this.cartTotal;
+                
+                // Check Max Stock
+                if (item.stock_max && newQuantity > item.stock_max) {
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { message: 'Stok tidak mencukupi (Max: ' + item.stock_max + ')', type: 'error' }
+                    }));
+                    return;
+                }
+
+                item.quantity = newQuantity;
+                item.loading = true; // Add loading state
+                
+                // Recalculate total immediately for UI
+                const diff = (newQuantity - oldQuantity) * item.price;
+                this.cartTotal += diff;
+
+                try {
+                    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    const response = await fetch(`/cart/${itemId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ quantity: newQuantity })
+                    });
+
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        throw new Error(data.message || 'Gagal update');
+                    }
+
+                    // Update with server true data to ensure sync
+                    this.cartTotal = data.cart_total;
+                    
+                    // Update global cart store count for header badge
+                    if (this.$store.cart) {
+                        this.$store.cart.count = data.cart_count;
+                    }
+
+                } catch (error) {
+                    // Revert on failure
+                    item.quantity = oldQuantity;
+                    this.cartTotal = oldTotal;
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { message: error.message || 'Gagal mengubah jumlah', type: 'error' }
+                    }));
+                } finally {
+                    item.loading = false;
+                }
+            },
+
+            async removeItem(itemId) {
+                if (!confirm('Hapus item ini dari keranjang?')) return;
+
+                const itemIndex = this.cartItems.findIndex(i => i.id === itemId);
+                if (itemIndex === -1) return;
+                const item = this.cartItems[itemIndex];
+                item.loading = true;
+
+                try {
+                    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    const response = await fetch(`/cart/${itemId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Remove from array with animation
+                        this.cartItems.splice(itemIndex, 1);
+                        this.cartTotal = data.cart_total;
+                        
+                        // Update header badge
+                        if (this.$store.cart) {
+                            this.$store.cart.count = data.cart_count;
+                        }
+
+                        window.dispatchEvent(new CustomEvent('toast', {
+                            detail: { message: 'Item berhasil dihapus', type: 'success' }
+                        }));
+                    }
+                } catch (error) {
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { message: 'Gagal menghapus item', type: 'error' }
+                    }));
+                    item.loading = false;
+                }
+            }
+        }));
+    });
+</script>
+@endpush
 @endsection

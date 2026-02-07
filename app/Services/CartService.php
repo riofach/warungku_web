@@ -2,117 +2,127 @@
 
 namespace App\Services;
 
+use App\Models\Item;
 use Illuminate\Support\Facades\Session;
 
 class CartService
 {
-    const SESSION_KEY = 'warungku_cart';
-
-    /**
-     * Get all items in cart
-     */
-    public function getItems(): array
-    {
-        return Session::get(self::SESSION_KEY, []);
-    }
+    protected string $sessionKey = 'cart';
 
     /**
      * Add item to cart
+     *
+     * @param string $itemId
+     * @param int $quantity
+     * @return void
+     * @throws \Exception
      */
-    public function addItem(int $itemId, string $name, int $price, int $quantity = 1): void
+    public function add(string $itemId, int $quantity = 1): void
     {
-        $cart = $this->getItems();
+        $cart = Session::get($this->sessionKey, []);
         
-        $existingIndex = $this->findItemIndex($cart, $itemId);
-        
-        if ($existingIndex !== null) {
-            $cart[$existingIndex]['quantity'] += $quantity;
+        // Find item to ensure it exists and check stock
+        // Assuming Item model has 'id', 'name', 'sell_price', 'stock', 'image_url'
+        $item = Item::findOrFail($itemId);
+
+        // Check if item exists in cart
+        if (isset($cart[$itemId])) {
+            $newQuantity = $cart[$itemId]['quantity'] + $quantity;
         } else {
-            $cart[] = [
-                'id' => $itemId,
-                'name' => $name,
-                'price' => $price,
-                'quantity' => $quantity,
-            ];
+            $newQuantity = $quantity;
         }
-        
-        Session::put(self::SESSION_KEY, $cart);
+
+        // Validate stock
+        if ($newQuantity > $item->stock) {
+            throw new \Exception('Stok tidak mencukupi');
+        }
+
+        // Update cart
+        $cart[$itemId] = [
+            'id' => $item->id,
+            'name' => $item->name,
+            'price' => $item->sell_price,
+            'quantity' => $newQuantity,
+            'image_url' => $item->image_url,
+            'stock_max' => $item->stock,
+        ];
+
+        Session::put($this->sessionKey, $cart);
+    }
+
+    /**
+     * Get cart content
+     *
+     * @return array
+     */
+    public function get(): array
+    {
+        return Session::get($this->sessionKey, []);
+    }
+
+    /**
+     * Get total item count in cart
+     *
+     * @return int
+     */
+    public function count(): int
+    {
+        $cart = $this->get();
+        $count = 0;
+        foreach ($cart as $item) {
+            $count += $item['quantity'];
+        }
+        return $count;
     }
 
     /**
      * Update item quantity
+     *
+     * @param string $itemId
+     * @param int $quantity
+     * @return void
+     * @throws \Exception
      */
-    public function updateQuantity(int $itemId, int $quantity): void
+    public function update(string $itemId, int $quantity): void
     {
-        $cart = $this->getItems();
-        $index = $this->findItemIndex($cart, $itemId);
-        
-        if ($index !== null) {
+        $cart = Session::get($this->sessionKey, []);
+        if (isset($cart[$itemId])) {
             if ($quantity <= 0) {
-                unset($cart[$index]);
-                $cart = array_values($cart);
+                unset($cart[$itemId]);
             } else {
-                $cart[$index]['quantity'] = $quantity;
+                // Check stock
+                 $item = Item::findOrFail($itemId);
+                 if ($quantity > $item->stock) {
+                     throw new \Exception('Stok tidak mencukupi');
+                 }
+                $cart[$itemId]['quantity'] = $quantity;
             }
-            Session::put(self::SESSION_KEY, $cart);
+            Session::put($this->sessionKey, $cart);
         }
     }
 
     /**
      * Remove item from cart
+     *
+     * @param string $itemId
+     * @return void
      */
-    public function removeItem(int $itemId): void
+    public function remove(string $itemId): void
     {
-        $cart = $this->getItems();
-        $index = $this->findItemIndex($cart, $itemId);
-        
-        if ($index !== null) {
-            unset($cart[$index]);
-            Session::put(self::SESSION_KEY, array_values($cart));
+        $cart = Session::get($this->sessionKey, []);
+        if (isset($cart[$itemId])) {
+            unset($cart[$itemId]);
+            Session::put($this->sessionKey, $cart);
         }
     }
 
     /**
      * Clear cart
+     *
+     * @return void
      */
     public function clear(): void
     {
-        Session::forget(self::SESSION_KEY);
-    }
-
-    /**
-     * Get cart count
-     */
-    public function getCount(): int
-    {
-        return array_sum(array_column($this->getItems(), 'quantity'));
-    }
-
-    /**
-     * Get cart total
-     */
-    public function getTotal(): int
-    {
-        $items = $this->getItems();
-        $total = 0;
-        
-        foreach ($items as $item) {
-            $total += $item['price'] * $item['quantity'];
-        }
-        
-        return $total;
-    }
-
-    /**
-     * Find item index in cart
-     */
-    private function findItemIndex(array $cart, int $itemId): ?int
-    {
-        foreach ($cart as $index => $item) {
-            if ($item['id'] === $itemId) {
-                return $index;
-            }
-        }
-        return null;
+        Session::forget($this->sessionKey);
     }
 }

@@ -1,53 +1,63 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
 
-// Initialize Alpine.js
 window.Alpine = Alpine;
 
-// Alpine.js stores for cart management
 Alpine.store('cart', {
-    items: JSON.parse(localStorage.getItem('warungku_cart') || '[]'),
+    count: 0,
     
-    get count() {
-        return this.items.reduce((sum, item) => sum + item.quantity, 0);
+    init() {
+        this.fetchCount();
     },
     
-    get total() {
-        return this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    },
-    
-    add(item) {
-        const existingIndex = this.items.findIndex(i => i.id === item.id);
-        if (existingIndex > -1) {
-            this.items[existingIndex].quantity += 1;
-        } else {
-            this.items.push({ ...item, quantity: 1 });
-        }
-        this.save();
-    },
-    
-    remove(itemId) {
-        this.items = this.items.filter(item => item.id !== itemId);
-        this.save();
-    },
-    
-    updateQuantity(itemId, quantity) {
-        const item = this.items.find(i => i.id === itemId);
-        if (item) {
-            item.quantity = Math.max(1, quantity);
-            this.save();
+    async fetchCount() {
+        try {
+            const response = await fetch('/cart/count');
+            if (response.ok) {
+                const data = await response.json();
+                this.count = data.count;
+            }
+        } catch (error) {
+            console.error('Error fetching cart count:', error);
         }
     },
     
-    clear() {
-        this.items = [];
-        this.save();
-    },
-    
-    save() {
-        localStorage.setItem('warungku_cart', JSON.stringify(this.items));
+    async add(itemId) {
+        try {
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            const response = await fetch('/cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    quantity: 1
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                this.count = data.cart_count;
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: { message: data.message, type: 'success' }
+                }));
+            } else {
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: { message: data.message || 'Gagal menambahkan item', type: 'error' }
+                }));
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: { message: 'Terjadi kesalahan sistem', type: 'error' }
+            }));
+        }
     }
 });
 
-// Start Alpine
 Alpine.start();

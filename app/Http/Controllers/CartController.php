@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Item;
 use App\Services\CartService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class CartController extends Controller
 {
@@ -20,59 +20,143 @@ class CartController extends Controller
      */
     public function index()
     {
-        $cartItems = $this->cartService->getItems();
-        $total = $this->cartService->getTotal();
+        $cartItems = $this->cartService->get();
+        // Calculate total manually or add getTotal() to service
+        $total = 0;
+        foreach ($cartItems as $item) {
+            $total += $item['price'] * $item['quantity'];
+        }
 
         return view('cart.index', compact('cartItems', 'total'));
     }
 
     /**
-     * Add item to cart
+     * Add item to cart (JSON API)
      */
-    public function add(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'item_id' => 'required|exists:items,id',
             'quantity' => 'integer|min:1',
         ]);
 
-        $item = Item::findOrFail($request->item_id);
-        $quantity = $request->quantity ?? 1;
+        try {
+            $this->cartService->add(
+                $validated['item_id'],
+                $validated['quantity'] ?? 1
+            );
 
-        if ($item->stock < $quantity) {
-            return back()->with('error', 'Stok tidak mencukupi.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Ditambahkan ke keranjang',
+                'cart_count' => $this->cartService->count(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
         }
-
-        $this->cartService->addItem(
-            $item->id,
-            $item->name,
-            $item->sell_price,
-            $quantity
-        );
-
-        return back()->with('success', 'Ditambahkan ke keranjang');
+    }
+    
+    /**
+     * Add item to cart (Form Submit - Legacy support if needed)
+     */
+    public function add(Request $request)
+    {
+        // For backwards compatibility, might redirect
+        $response = $this->store($request);
+        
+        // If it returns JSON, we might want to decode it and redirect if not AJAX
+        // But for now, let's just use store logic and return redirect if not ajax
+        if ($request->ajax() || $request->wantsJson()) {
+            return $response;
+        }
+        
+        $data = $response->getData();
+        if ($data->success) {
+            return back()->with('success', $data->message);
+        } else {
+            return back()->with('error', $data->message);
+        }
     }
 
     /**
      * Update cart item quantity
      */
-    public function update(Request $request, int $itemId)
+    public function update(Request $request, string $itemId)
     {
         $request->validate([
-            'quantity' => 'required|integer|min:0',
+            'quantity' => 'required|integer|min:1',
         ]);
 
-        $this->cartService->updateQuantity($itemId, $request->quantity);
+        try {
+            $this->cartService->update($itemId, $request->quantity);
 
-        return back()->with('success', 'Keranjang diperbarui');
+            // Calculate new totals for JSON response
+            $cartItems = $this->cartService->get();
+            $cartTotal = 0;
+            $itemSubtotal = 0;
+            
+            foreach ($cartItems as $item) {
+                $lineTotal = $item['price'] * $item['quantity'];
+                $cartTotal += $lineTotal;
+                if ($item['id'] == $itemId) { // Note: itemId in cart array is the key, but inside it has 'id' too. 
+                    // However, our update uses $itemId which is the key (uuid).
+                    // Let's verify structure: $cart[$itemId]
+                     $itemSubtotal = $lineTotal;
+                }
+            }
+            
+            // If checking specifically the updated item logic:
+            if (isset($cartItems[$itemId])) {
+                 $itemSubtotal = $cartItems[$itemId]['price'] * $cartItems[$itemId]['quantity'];
+            }
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Keranjang diperbarui',
+                    'cart_count' => $this->cartService->count(),
+                    'item_subtotal' => $itemSubtotal,
+                    'item_subtotal_formatted' => 'Rp ' . number_format($itemSubtotal, 0, ',', '.'),
+                    'cart_total' => $cartTotal,
+                    'cart_total_formatted' => 'Rp ' . number_format($cartTotal, 0, ',', '.')
+                ]);
+            }
+
+            return back()->with('success', 'Keranjang diperbarui');
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+            }
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     /**
      * Remove item from cart
      */
-    public function remove(int $itemId)
+    public function remove(Request $request, string $itemId)
     {
-        $this->cartService->removeItem($itemId);
+        $this->cartService->remove($itemId);
+
+        if ($request->wantsJson()) {
+             // Calculate new totals
+            $cartItems = $this->cartService->get();
+            $cartTotal = 0;
+            foreach ($cartItems as $item) {
+                $cartTotal += $item['price'] * $item['quantity'];
+            }
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Item dihapus',
+                'cart_count' => $this->cartService->count(),
+                'cart_total' => $cartTotal,
+                'cart_total_formatted' => 'Rp ' . number_format($cartTotal, 0, ',', '.')
+            ]);
+        }
 
         return back()->with('success', 'Item dihapus dari keranjang');
     }
@@ -85,5 +169,15 @@ class CartController extends Controller
         $this->cartService->clear();
 
         return redirect()->route('shop.index')->with('success', 'Keranjang dikosongkan');
+    }
+    
+    /**
+     * Get cart count (JSON API)
+     */
+    public function count(): JsonResponse
+    {
+        return response()->json([
+            'count' => $this->cartService->count(),
+        ]);
     }
 }

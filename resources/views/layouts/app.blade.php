@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="WarungKu - Belanja mudah dari warung tetangga">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'WarungKu') - Belanja Mudah</title>
     
     <!-- Favicon -->
@@ -123,6 +124,33 @@
         @endif
 
         @yield('content')
+
+        <!-- Toast Notification -->
+        <div 
+            x-data="{ show: false, message: '', type: 'success' }"
+            x-show="show"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-2"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 translate-y-2"
+            @toast.window="
+                message = $event.detail.message;
+                type = $event.detail.type || 'success';
+                show = true;
+                setTimeout(() => show = false, 3000);
+            "
+            class="fixed top-20 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]"
+            :class="{
+                'bg-success text-white': type === 'success',
+                'bg-error text-white': type === 'error',
+                'bg-warning text-white': type === 'warning'
+            }"
+            style="display: none;"
+        >
+            <span x-text="message" class="font-medium"></span>
+        </div>
     </main>
 
     <!-- Bottom Navigation (Mobile) -->

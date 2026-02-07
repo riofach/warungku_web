@@ -23,7 +23,9 @@ Route::get('/', [ShopController::class, 'index'])->name('home');
 
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add'); // Legacy support
 Route::patch('/cart/{itemId}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{itemId}', [CartController::class, 'remove'])->name('cart.remove');
 Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');

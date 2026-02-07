@@ -46,7 +46,10 @@
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                     : 'bg-primary text-white hover:bg-blue-700 active:bg-blue-800 cursor-pointer' }}"
                 {{ $item->stock == 0 ? 'disabled' : '' }}
-                onclick="alert('Fitur keranjang akan hadir di update berikutnya!')" 
+                @if($item->stock > 0)
+                    x-data
+                    @click="$store.cart.add('{{ $item->id }}')"
+                @endif
             >
                 Beli
             </button>
