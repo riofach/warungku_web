@@ -2,68 +2,64 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CheckoutRequest;
 use App\Models\HousingBlock;
-use App\Models\Order;
-use App\Models\Setting;
+use App\Models\Item;
 use App\Services\CartService;
 use App\Services\CheckoutService;
 use Illuminate\Http\Request;
 
 class CheckoutController extends Controller
 {
-    protected CartService $cartService;
-    protected CheckoutService $checkoutService;
-
-    public function __construct(CartService $cartService, CheckoutService $checkoutService)
-    {
-        $this->cartService = $cartService;
-        $this->checkoutService = $checkoutService;
-    }
+    public function __construct(
+        protected CartService $cartService,
+        protected CheckoutService $checkoutService
+    ) {}
 
     /**
      * Display checkout form
      */
     public function index()
     {
-        $cartItems = $this->cartService->getItems();
+        $cartItems = $this->cartService->get();
         
         if (empty($cartItems)) {
-            return redirect()->route('shop.index')
+            return redirect()->route('cart.index')
                 ->with('error', 'Keranjang belanja kosong');
         }
 
-        $total = $this->cartService->getTotal();
-        $housingBlocks = HousingBlock::orderBy('name')->get();
-        $isDeliveryEnabled = Setting::isDeliveryEnabled();
-        $isWarungOpen = Setting::isWarungOpen();
+        // Validate stock availability
+        foreach ($cartItems as $key => $cartItem) {
+             // Assuming $cartItem has 'id'
+             $freshItem = Item::find($cartItem['id']);
+             
+             if (!$freshItem || !$freshItem->is_active) {
+                 $this->cartService->remove($key);
+                 return redirect()->route('cart.index')
+                     ->with('error', "Item {$cartItem['name']} tidak lagi tersedia.");
+             }
 
-        return view('checkout.index', compact(
+             if ($freshItem->stock < $cartItem['quantity']) {
+                 return redirect()->route('cart.index')
+                     ->with('error', "Stok untuk {$freshItem->name} tidak mencukupi (Tersedia: {$freshItem->stock}).");
+             }
+        }
+
+        $total = $this->cartService->total();
+        $housingBlocks = HousingBlock::orderBy('name')->get();
+        
+        return view('checkout.form', compact(
             'cartItems',
             'total',
-            'housingBlocks',
-            'isDeliveryEnabled',
-            'isWarungOpen'
+            'housingBlocks'
         ));
     }
 
     /**
      * Process checkout
      */
-    public function store(Request $request)
+    public function store(CheckoutRequest $request)
     {
-        $request->validate([
-            'customer_name' => 'required|string|min:2|max:255',
-            'housing_block_id' => 'required|exists:housing_blocks,id',
-            'delivery_type' => 'required|in:delivery,pickup',
-            'payment_method' => 'required|in:cash,qris',
-        ]);
-
-        // Validate checkout
-        $errors = $this->checkoutService->validateCheckout();
-        if (!empty($errors)) {
-            return back()->withErrors($errors)->withInput();
-        }
-
         try {
             $order = $this->checkoutService->createOrder(
                 $request->customer_name,
@@ -73,12 +69,12 @@ class CheckoutController extends Controller
             );
 
             // Redirect based on payment method
-            if ($request->payment_method === Order::PAYMENT_QRIS) {
-                return redirect()->route('payment.qris', $order->code);
+            if ($request->payment_method === 'qris') {
+                return redirect()->route('payment.qris', ['code' => $order->code]);
             }
 
             // For cash payment, go directly to tracking
-            return redirect()->route('tracking.show', $order->code)
+            return redirect()->route('tracking.show', ['code' => $order->code])
                 ->with('success', 'Pesanan berhasil dibuat!');
 
         } catch (\Exception $e) {

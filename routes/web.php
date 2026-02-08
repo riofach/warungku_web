@@ -31,8 +31,15 @@ Route::delete('/cart/{itemId}', [CartController::class, 'destroy'])->name('cart.
 Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
 
 // Checkout Routes
-Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::middleware([App\Http\Middleware\CheckOperatingHours::class])->group(function () {
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+});
+
+// Closed Route
+Route::get('/closed', function () {
+    return view('closed');
+})->name('closed');
 
 // Tracking Routes
 Route::get('/tracking', [TrackingController::class, 'index'])->name('tracking.index');

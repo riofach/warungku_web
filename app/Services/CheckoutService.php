@@ -30,7 +30,7 @@ class CheckoutService
         }
 
         // Check cart is not empty
-        $cartItems = $this->cartService->getItems();
+        $cartItems = $this->cartService->get();
         if (empty($cartItems)) {
             $errors[] = 'Keranjang belanja kosong.';
         }
@@ -54,13 +54,13 @@ class CheckoutService
      */
     public function createOrder(
         string $customerName,
-        int $housingBlockId,
+        ?string $housingBlockId,
         string $deliveryType,
         string $paymentMethod
     ): Order {
         return DB::transaction(function () use ($customerName, $housingBlockId, $deliveryType, $paymentMethod) {
-            $cartItems = $this->cartService->getItems();
-            $total = $this->cartService->getTotal();
+            $cartItems = $this->cartService->get();
+            $total = $this->cartService->total();
 
             // Create order
             $order = Order::create([

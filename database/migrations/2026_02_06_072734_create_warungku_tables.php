@@ -34,7 +34,7 @@ return new class extends Migration
 
         // 3. order_items
         Schema::create('order_items', function (Blueprint $table) {
-            $table->id(); // Use standard ID for pivot/sub items
+            $table->uuid('id')->primary(); 
             
             $table->foreignUuid('order_id')->constrained('orders')->cascadeOnDelete();
             $table->foreignUuid('item_id')->constrained('items'); // Don't cascade delete items? Maybe null on delete or restrict.
@@ -63,7 +63,7 @@ return new class extends Migration
 
         // 5. transaction_items
         Schema::create('transaction_items', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->foreignUuid('transaction_id')->constrained('transactions')->cascadeOnDelete();
             $table->foreignUuid('item_id')->constrained('items');
             $table->integer('quantity');
