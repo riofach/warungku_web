@@ -5,6 +5,7 @@ use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\CartController;
 
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TrackingController;
 
 /*
@@ -52,7 +53,6 @@ Route::get('/tracking', [TrackingController::class, 'index'])->name('tracking.in
 Route::post('/tracking/search', [TrackingController::class, 'search'])->name('tracking.search');
 Route::get('/tracking/{code}', [TrackingController::class, 'show'])->name('tracking.show');
 
-// Payment Routes (to be implemented)
-Route::get('/payment/qris/{code}', function ($code) {
-    return view('payment.qris', ['code' => $code]);
-})->name('payment.qris');
+// Payment Routes
+Route::get('/payment/{code}', [PaymentController::class, 'show'])->name('payment.show');
+Route::get('/payment/{code}/check', [PaymentController::class, 'check'])->name('payment.check');

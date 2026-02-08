@@ -76,11 +76,7 @@ class CheckoutController extends Controller
             // Redirect based on payment method
             // QRIS -> Payment Page
             if ($order->payment_method === 'qris') {
-                // Route definition: Route::get('/payment/{code}', ...)
-                // Assuming route name is 'payment.show' or similar. 
-                // The snippet showed 'payment.qris', let's stick to existing or create if needed.
-                // Story 11.4 will implement the page, but route might exist.
-                return redirect()->route('payment.qris', ['code' => $order->code]);
+                return redirect()->route('payment.show', ['code' => $order->code]);
             }
 
             // Cash -> Success/Tracking Page

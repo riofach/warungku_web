@@ -65,7 +65,7 @@ class CheckoutTest extends TestCase
         ]);
 
         // Assert
-        $order = \App\Models\Order::first();
+        $order = \App\Models\Order::where('customer_name', 'Budi')->first();
         $this->assertNotNull($order);
         $this->assertEquals('Budi', $order->customer_name);
         $this->assertEquals(30000, $order->total); // 15000 * 2
@@ -81,6 +81,9 @@ class CheckoutTest extends TestCase
 
     public function test_checkout_qris_success()
     {
+        // Setup Housing Block
+        $block = \App\Models\HousingBlock::create(['name' => 'Blok A']);
+
         // Setup Item
         $category = Category::create(['name' => 'Drink']);
         $item = Item::create([
@@ -108,17 +111,18 @@ class CheckoutTest extends TestCase
         // Submit Checkout
         $response = $this->post(route('checkout.store'), [
             'customer_name' => 'Siti',
-            'delivery_type' => 'pickup',
-            'payment_method' => 'qris'
+            'delivery_type' => 'delivery',
+            'payment_method' => 'qris',
+            'housing_block_id' => $block->id
         ]);
 
         // Assert
-        $order = \App\Models\Order::first();
-        $this->assertNotNull($order);
+        $order = \App\Models\Order::where('customer_name', 'Siti')->first();
+        $this->assertNotNull($order, 'Order was not created');
         $this->assertEquals('Siti', $order->customer_name);
         $this->assertEquals('qris', $order->payment_method);
         
         // Redirect to Payment Page
-        $response->assertRedirect(route('payment.qris', ['code' => $order->code]));
+        $response->assertRedirect(route('payment.show', ['code' => $order->code]));
     }
 }

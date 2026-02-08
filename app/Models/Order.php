@@ -22,10 +22,14 @@ class Order extends Model
         'delivery_type',
         'status',
         'total',
+        'payment_url',
+        'payment_token',
+        'payment_expires_at',
     ];
 
     protected $casts = [
         'total' => 'integer',
+        'payment_expires_at' => 'datetime',
     ];
 
     // Order statuses

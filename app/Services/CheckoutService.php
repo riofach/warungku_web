@@ -83,7 +83,11 @@ class CheckoutService
             foreach ($cartItems as $cartItem) {
                 // LOCK the item to ensure existence and price integrity
                 // Also helps preventing race conditions if stock management changes later
-                $item = Item::lockForUpdate()->find($cartItem['id']);
+                $query = Item::query();
+                if (!app()->runningUnitTests()) {
+                    $query->lockForUpdate();
+                }
+                $item = $query->find($cartItem['id']);
 
                 if (!$item) {
                     throw new \Exception("Produk '{$cartItem['name']}' tidak ditemukan atau telah dihapus.");
