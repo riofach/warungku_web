@@ -61,6 +61,21 @@ class CartService
     }
 
     /**
+     * Get total cart value
+     *
+     * @return int
+     */
+    public function total(): int
+    {
+        $cart = $this->get();
+        $total = 0;
+        foreach ($cart as $item) {
+            $total += $item['price'] * $item['quantity'];
+        }
+        return $total;
+    }
+
+    /**
      * Get total item count in cart
      *
      * @return int

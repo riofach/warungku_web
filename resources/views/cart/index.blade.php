@@ -42,7 +42,7 @@
                                 <!-- Quantity Control -->
                                 <div class="flex items-center gap-1 bg-background rounded-lg p-1 border border-border w-fit">
                                     <button 
-                                        @click="updateQuantity(item.id, parseInt(item.quantity) - 1)" 
+                                        @click="changeQuantity(item, -1)" 
                                         class="w-8 h-8 rounded-md hover:bg-gray-200 flex items-center justify-center text-lg font-bold transition-colors disabled:opacity-50"
                                         :disabled="item.loading || item.quantity <= 1"
                                     >-</button>
@@ -50,7 +50,8 @@
                                     <input 
                                         type="number" 
                                         x-model.number="item.quantity"
-                                        @change="updateQuantity(item.id, parseInt($el.value))"
+                                        @input="handleInput(item)"
+                                        @input.debounce.500ms="saveQuantity(item)"
                                         @keyup.enter="$el.blur()"
                                         class="w-12 text-center font-medium bg-transparent border-none p-0 focus:ring-0 appearance-none [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
                                         min="1"
@@ -59,7 +60,7 @@
                                     >
                                     
                                     <button 
-                                        @click="updateQuantity(item.id, parseInt(item.quantity) + 1)" 
+                                        @click="changeQuantity(item, 1)" 
                                         class="w-8 h-8 rounded-md hover:bg-gray-200 flex items-center justify-center text-lg font-bold transition-colors disabled:opacity-50"
                                         :disabled="item.loading || (item.stock_max && item.quantity >= item.stock_max)"
                                     >+</button>
@@ -67,7 +68,7 @@
 
                                 <!-- Remove -->
                                 <button 
-                                    @click="removeItem(item.id)" 
+                                    @click="confirmDelete(item)" 
                                     class="text-error hover:text-red-700 text-sm font-medium flex items-center gap-1 transition-colors"
                                     :disabled="item.loading"
                                 >
@@ -131,14 +132,67 @@
             </a>
         </div>
     @endif
+
+    <!-- Delete Confirmation Modal -->
+    <div
+        x-show="showDeleteModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        style="display: none;"
+    >
+        <div 
+            class="bg-surface rounded-xl shadow-xl w-full max-w-sm p-6"
+            @click.outside="showDeleteModal = false"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            <div class="text-center">
+                <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-text-primary mb-2">Hapus Item?</h3>
+                <p class="text-text-secondary text-sm mb-6">
+                    Apakah Anda yakin ingin menghapus <span class="font-bold text-text-primary" x-text="itemToDelete?.name"></span> dari keranjang?
+                </p>
+                <div class="flex gap-3 justify-center">
+                    <button 
+                        @click="showDeleteModal = false" 
+                        class="px-4 py-2 rounded-lg border border-border text-text-secondary font-medium hover:bg-background transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button 
+                        @click="removeItem()" 
+                        class="px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+                    >
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('cartPage', () => ({
-            cartItems: @json(array_values($cartItems)),
+            // Initialize items with explicit loading state and ensure array format
+            cartItems: @json(array_values($cartItems)).map(item => ({ ...item, loading: false })),
             cartTotal: {{ $total }},
+            showDeleteModal: false,
+            itemToDelete: null,
             
             get cartCount() {
                 return this.cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -152,43 +206,74 @@
                 return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
             },
 
-            async updateQuantity(itemId, newQuantity) {
-                if (newQuantity < 1) return;
+            // Updates local total based on current array state (instant)
+            calculateLocalTotal() {
+                this.cartTotal = this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            },
+
+            // Called by +/- buttons
+            changeQuantity(item, change) {
+                const newQty = parseInt(item.quantity) + change;
+                if (newQty < 1) return;
                 
-                // Find item
-                const itemIndex = this.cartItems.findIndex(i => i.id === itemId);
-                if (itemIndex === -1) return;
-                const item = this.cartItems[itemIndex];
-                
-                // Optimistic UI Update
-                const oldQuantity = item.quantity;
-                const oldTotal = this.cartTotal;
-                
-                // Check Max Stock
-                if (item.stock_max && newQuantity > item.stock_max) {
+                if (item.stock_max && newQty > item.stock_max) {
                     window.dispatchEvent(new CustomEvent('toast', {
                         detail: { message: 'Stok tidak mencukupi (Max: ' + item.stock_max + ')', type: 'error' }
                     }));
                     return;
                 }
 
-                item.quantity = newQuantity;
-                item.loading = true; // Add loading state
+                item.quantity = newQty;
+                this.calculateLocalTotal();
+                this.saveQuantity(item); // Immediate save for clicks
+            },
+
+            // Called by input @input (instant UI update)
+            handleInput(item) {
+                // If empty or invalid, don't break UI, just wait
+                if (!item.quantity || item.quantity < 1) {
+                     // Optionally keep '1' or wait for blur? 
+                     // Let's allow typing but min 1 for calc
+                     // Actually better not to mutate aggressively while typing
+                }
                 
-                // Recalculate total immediately for UI
-                const diff = (newQuantity - oldQuantity) * item.price;
-                this.cartTotal += diff;
+                // If user exceeds max stock while typing
+                if (item.stock_max && item.quantity > item.stock_max) {
+                    // We don't block typing but show toast? Or just clamp?
+                    // Clamping while typing is annoying. Let's just calc what we have.
+                    // Validation happens on save.
+                }
+
+                this.calculateLocalTotal();
+            },
+
+            // Called by input @input.debounce (server update)
+            async saveQuantity(item) {
+                // Final validation before sending
+                if (!item.quantity || item.quantity < 1) {
+                    item.quantity = 1;
+                    this.calculateLocalTotal();
+                }
+                if (item.stock_max && item.quantity > item.stock_max) {
+                     item.quantity = item.stock_max;
+                     this.calculateLocalTotal();
+                     window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { message: 'Stok disesuaikan ke maksimum (' + item.stock_max + ')', type: 'warning' }
+                    }));
+                }
+
+                item.loading = true;
 
                 try {
                     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                    const response = await fetch(`/cart/${itemId}`, {
+                    const response = await fetch(`/cart/${item.id}`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': token,
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify({ quantity: newQuantity })
+                        body: JSON.stringify({ quantity: item.quantity })
                     });
 
                     const data = await response.json();
@@ -197,33 +282,43 @@
                         throw new Error(data.message || 'Gagal update');
                     }
 
-                    // Update with server true data to ensure sync
+                    // Sync server total just in case
                     this.cartTotal = data.cart_total;
                     
-                    // Update global cart store count for header badge
+                    // Update header badge
                     if (this.$store.cart) {
-                        this.$store.cart.count = data.cart_count;
+                        this.$store.cart.updateCount(data.cart_count);
                     }
 
                 } catch (error) {
-                    // Revert on failure
-                    item.quantity = oldQuantity;
-                    this.cartTotal = oldTotal;
+                    console.error('Update quantity error:', error);
                     window.dispatchEvent(new CustomEvent('toast', {
-                        detail: { message: error.message || 'Gagal mengubah jumlah', type: 'error' }
+                        detail: { message: error.message || 'Gagal menyimpan perubahan', type: 'error' }
                     }));
+                    // Don't revert blindly as user might have typed more? 
+                    // But for consistency we might want to reload or revert to prev?
+                    // For now, error toast is enough.
                 } finally {
                     item.loading = false;
                 }
             },
 
-            async removeItem(itemId) {
-                if (!confirm('Hapus item ini dari keranjang?')) return;
+            confirmDelete(item) {
+                this.itemToDelete = item;
+                this.showDeleteModal = true;
+            },
 
+            async removeItem() {
+                if (!this.itemToDelete) return;
+                
+                const item = this.itemToDelete;
+                const itemId = item.id;
                 const itemIndex = this.cartItems.findIndex(i => i.id === itemId);
+                
                 if (itemIndex === -1) return;
-                const item = this.cartItems[itemIndex];
+
                 item.loading = true;
+                this.showDeleteModal = false; // Close modal immediately or wait? Better close to show progress on item
 
                 try {
                     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -236,14 +331,17 @@
                         }
                     });
 
+                    // Check if response is ok before parsing JSON (in case of 404/500 HTML response)
+                    if (!response.ok) {
+                        throw new Error(`Gagal menghubungi server (${response.status})`);
+                    }
+
                     const data = await response.json();
 
                     if (data.success) {
-                        // Remove from array with animation
                         this.cartItems.splice(itemIndex, 1);
                         this.cartTotal = data.cart_total;
                         
-                        // Update header badge
                         if (this.$store.cart) {
                             this.$store.cart.count = data.cart_count;
                         }
@@ -251,12 +349,22 @@
                         window.dispatchEvent(new CustomEvent('toast', {
                             detail: { message: 'Item berhasil dihapus', type: 'success' }
                         }));
+                    } else {
+                        throw new Error(data.message || 'Gagal menghapus item');
                     }
                 } catch (error) {
+                    console.error('Remove item error:', error);
                     window.dispatchEvent(new CustomEvent('toast', {
-                        detail: { message: 'Gagal menghapus item', type: 'error' }
+                        detail: { message: error.message || 'Gagal menghapus item', type: 'error' }
                     }));
-                    item.loading = false;
+                } finally {
+                    // Reset loading state if item still exists (failed request)
+                    // If spliced, this item reference is detached from array so it doesn't matter,
+                    // but if it wasn't spliced (failure), we MUST reset it.
+                     if (this.cartItems[itemIndex] === item) {
+                         item.loading = false;
+                     }
+                     this.itemToDelete = null;
                 }
             }
         }));

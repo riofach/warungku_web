@@ -20,7 +20,7 @@
     
     @stack('styles')
 </head>
-<body class="bg-background text-text-primary font-sans min-h-screen flex flex-col" x-data>
+<body class="bg-background text-text-primary font-sans min-h-screen flex flex-col" x-data x-init="$store.cart.count = {{ $cartCount ?? 0 }}">
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-surface shadow-sm border-b border-border">
         <div class="container mx-auto px-4">
@@ -66,7 +66,8 @@
                     <span 
                         x-show="$store.cart.count > 0"
                         x-text="$store.cart.count"
-                        class="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-cart-bounce"
+                        class="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                        :class="{ 'animate-cart-bounce': $store.cart.animating }"
                     ></span>
                 </a>
             </div>
@@ -172,6 +173,7 @@
                     x-show="$store.cart.count > 0"
                     x-text="$store.cart.count"
                     class="absolute top-1 right-1/4 bg-primary text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center"
+                    :class="{ 'animate-cart-bounce': $store.cart.animating }"
                 ></span>
             </a>
             <a href="{{ route('tracking.index') }}" class="flex flex-col items-center py-2 px-4 rounded-lg {{ request()->routeIs('tracking.*') ? 'text-primary bg-primary/10' : 'text-text-secondary hover:bg-background' }}">

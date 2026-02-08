@@ -21,11 +21,7 @@ class CartController extends Controller
     public function index()
     {
         $cartItems = $this->cartService->get();
-        // Calculate total manually or add getTotal() to service
-        $total = 0;
-        foreach ($cartItems as $item) {
-            $total += $item['price'] * $item['quantity'];
-        }
+        $total = $this->cartService->total();
 
         return view('cart.index', compact('cartItems', 'total'));
     }
@@ -94,21 +90,11 @@ class CartController extends Controller
             $this->cartService->update($itemId, $request->quantity);
 
             // Calculate new totals for JSON response
-            $cartItems = $this->cartService->get();
-            $cartTotal = 0;
             $itemSubtotal = 0;
+            $cartItems = $this->cartService->get();
+            $cartTotal = $this->cartService->total();
             
-            foreach ($cartItems as $item) {
-                $lineTotal = $item['price'] * $item['quantity'];
-                $cartTotal += $lineTotal;
-                if ($item['id'] == $itemId) { // Note: itemId in cart array is the key, but inside it has 'id' too. 
-                    // However, our update uses $itemId which is the key (uuid).
-                    // Let's verify structure: $cart[$itemId]
-                     $itemSubtotal = $lineTotal;
-                }
-            }
-            
-            // If checking specifically the updated item logic:
+            // Get subtotal for specific item
             if (isset($cartItems[$itemId])) {
                  $itemSubtotal = $cartItems[$itemId]['price'] * $cartItems[$itemId]['quantity'];
             }
@@ -137,17 +123,13 @@ class CartController extends Controller
     /**
      * Remove item from cart
      */
-    public function remove(Request $request, string $itemId)
+    public function destroy(Request $request, string $itemId)
     {
         $this->cartService->remove($itemId);
 
         if ($request->wantsJson()) {
              // Calculate new totals
-            $cartItems = $this->cartService->get();
-            $cartTotal = 0;
-            foreach ($cartItems as $item) {
-                $cartTotal += $item['price'] * $item['quantity'];
-            }
+            $cartTotal = $this->cartService->total();
 
             return response()->json([
                 'success' => true, 
