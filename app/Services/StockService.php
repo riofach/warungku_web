@@ -51,7 +51,7 @@ class StockService
     /**
      * Check if all items in cart have sufficient stock
      */
-    public function validateStock(array $cartItems): array
+    public function validateCartAvailability(array $cartItems): array
     {
         $errors = [];
         

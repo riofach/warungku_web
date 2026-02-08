@@ -7,13 +7,15 @@ use App\Models\HousingBlock;
 use App\Models\Item;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 
 class CheckoutController extends Controller
 {
     public function __construct(
         protected CartService $cartService,
-        protected CheckoutService $checkoutService
+        protected CheckoutService $checkoutService,
+        protected StockService $stockService
     ) {}
 
     /**
@@ -29,8 +31,8 @@ class CheckoutController extends Controller
         }
 
         // Validate stock availability
+        // We can use StockService here too for consistency, but keep original logic for now as it handles removal of inactive items
         foreach ($cartItems as $key => $cartItem) {
-             // Assuming $cartItem has 'id'
              $freshItem = Item::find($cartItem['id']);
              
              if (!$freshItem || !$freshItem->is_active) {
@@ -61,6 +63,15 @@ class CheckoutController extends Controller
     public function store(CheckoutRequest $request)
     {
         try {
+            // Validate stock before processing
+            $cartItems = $this->cartService->get();
+            $stockErrors = $this->stockService->validateCartAvailability($cartItems);
+
+            if (!empty($stockErrors)) {
+                return redirect()->route('cart.index')
+                    ->withErrors($stockErrors);
+            }
+
             $order = $this->checkoutService->createOrder(
                 $request->customer_name,
                 $request->housing_block_id,

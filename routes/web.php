@@ -38,7 +38,13 @@ Route::middleware([App\Http\Middleware\CheckOperatingHours::class])->group(funct
 
 // Closed Route
 Route::get('/closed', function () {
-    return view('closed');
+    if (App\Models\Setting::isWarungOpen()) {
+        return redirect()->route('home');
+    }
+
+    $open = App\Models\Setting::getValue(App\Models\Setting::KEY_OPERATING_HOURS_OPEN, '08:00');
+    $close = App\Models\Setting::getValue(App\Models\Setting::KEY_OPERATING_HOURS_CLOSE, '21:00');
+    return view('closed', compact('open', 'close'));
 })->name('closed');
 
 // Tracking Routes

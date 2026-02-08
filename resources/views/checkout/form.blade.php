@@ -6,7 +6,7 @@
 <div class="container mx-auto px-4 py-6 pb-24 md:pb-6" x-data="checkoutForm()">
     <h1 class="text-2xl font-bold mb-6">Checkout</h1>
 
-    <form action="{{ route('checkout.store') }}" method="POST" id="checkout-form">
+    <form action="{{ route('checkout.store') }}" method="POST" id="checkout-form" @submit="handleSubmit">
         @csrf
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -169,9 +169,17 @@
                     <!-- Desktop Button -->
                     <div class="hidden md:block mt-6">
                          <button type="submit" form="checkout-form"
-                            class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            :disabled="!isValid()">
-                            Buat Pesanan
+                            class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            :disabled="isSubmitting || !isValid()"
+                            :class="{'opacity-75 cursor-wait': isSubmitting}">
+                            
+                            <!-- Loading Spinner -->
+                            <svg x-show="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            
+                            <span x-text="isSubmitting ? 'Memproses...' : 'Buat Pesanan'"></span>
                         </button>
                     </div>
                 </div>
@@ -188,9 +196,17 @@
             <p class="text-lg font-bold text-blue-600">Rp {{ number_format($total, 0, ',', '.') }}</p>
         </div>
         <button type="submit" form="checkout-form"
-            class="flex-1 flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="!isValid()">
-            Buat Pesanan
+            class="flex-1 flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            :disabled="isSubmitting || !isValid()"
+            :class="{'opacity-75 cursor-wait': isSubmitting}">
+            
+            <!-- Loading Spinner -->
+            <svg x-show="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            
+            <span x-text="isSubmitting ? 'Memproses...' : 'Buat Pesanan'"></span>
         </button>
     </div>
 </div>
@@ -199,10 +215,11 @@
 
 @push('scripts')
 <script>
-    function checkoutForm() {
-        return {
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('checkoutForm', () => ({
             deliveryType: @json(old('delivery_type', 'delivery')),
             paymentMethod: @json(old('payment_method', '')),
+            isSubmitting: false,
             
             init() {
                 // Auto-select payment method based on initial delivery type if needed
@@ -231,8 +248,16 @@
                     return this.paymentMethod === 'tunai';
                 }
                 return false;
+            },
+
+            handleSubmit(e) {
+                if (this.isSubmitting) {
+                    e.preventDefault();
+                    return;
+                }
+                this.isSubmitting = true;
             }
-        }
-    }
+        }));
+    });
 </script>
 @endpush

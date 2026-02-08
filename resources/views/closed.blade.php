@@ -15,7 +15,7 @@
     <p class="text-gray-600 mb-8 max-w-md">
         Maaf, kami sedang tidak beroperasi saat ini. Silakan kembali lagi pada jam operasional kami:
         <span class="block font-medium text-gray-900 mt-2">
-            08:00 - 21:00 WIB
+            {{ $open }} - {{ $close }} WIB
         </span>
     </p>
     

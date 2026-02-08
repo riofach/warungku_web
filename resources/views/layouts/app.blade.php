@@ -30,7 +30,15 @@
                     <div class="relative w-10 h-10 shrink-0 transition-transform group-hover:scale-105">
                         <img src="{{ asset('logo-warung.png') }}" alt="WarungLuthfan Logo" class="w-10 h-10 object-contain drop-shadow-sm">
                     </div>
-                    <span class="text-xl font-bold text-primary tracking-tight">WarungLuthfan</span>
+                    <div class="flex flex-col">
+                        <span class="text-xl font-bold text-primary tracking-tight leading-none">WarungLuthfan</span>
+                        <!-- Jam WIB -->
+                        <div x-data="{ time: '' }" x-init="time = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB'; setInterval(() => { 
+                            time = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
+                        }, 1000)" class="text-xs text-text-secondary font-medium">
+                            <span x-text="time"></span>
+                        </div>
+                    </div>
                 </a>
 
                 <!-- Search (Desktop) -->
