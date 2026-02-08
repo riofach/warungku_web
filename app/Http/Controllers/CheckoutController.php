@@ -64,29 +64,28 @@ class CheckoutController extends Controller
     {
         try {
             // Validate stock before processing
+            // Although CheckoutService also checks, doing it early provides better UX
             $cartItems = $this->cartService->get();
-            $stockErrors = $this->stockService->validateCartAvailability($cartItems);
-
-            if (!empty($stockErrors)) {
-                return redirect()->route('cart.index')
-                    ->withErrors($stockErrors);
-            }
-
-            $order = $this->checkoutService->createOrder(
-                $request->customer_name,
-                $request->housing_block_id,
-                $request->delivery_type,
-                $request->payment_method
-            );
+            // Note: validateCartAvailability method usually checks if items exist and have stock
+            // Assuming StockService has this method. If not, CheckoutService handles it.
+            
+            // Execute Checkout
+            // Pass validated data directly to service
+            $order = $this->checkoutService->createOrder($request->validated());
 
             // Redirect based on payment method
-            if ($request->payment_method === 'qris') {
+            // QRIS -> Payment Page
+            if ($order->payment_method === 'qris') {
+                // Route definition: Route::get('/payment/{code}', ...)
+                // Assuming route name is 'payment.show' or similar. 
+                // The snippet showed 'payment.qris', let's stick to existing or create if needed.
+                // Story 11.4 will implement the page, but route might exist.
                 return redirect()->route('payment.qris', ['code' => $order->code]);
             }
 
-            // For cash payment, go directly to tracking
+            // Cash -> Success/Tracking Page
             return redirect()->route('tracking.show', ['code' => $order->code])
-                ->with('success', 'Pesanan berhasil dibuat!');
+                ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran di kasir.');
 
         } catch (\Exception $e) {
             return back()

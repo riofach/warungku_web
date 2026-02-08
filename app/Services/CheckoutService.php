@@ -11,10 +11,12 @@ use Illuminate\Support\Facades\DB;
 class CheckoutService
 {
     protected CartService $cartService;
+    protected OrderService $orderService;
 
-    public function __construct(CartService $cartService)
+    public function __construct(CartService $cartService, OrderService $orderService)
     {
         $this->cartService = $cartService;
+        $this->orderService = $orderService;
     }
 
     /**
@@ -52,41 +54,61 @@ class CheckoutService
      * Create order from cart
      * Note: Stock is NOT reduced here - only after payment success!
      */
-    public function createOrder(
-        string $customerName,
-        ?string $housingBlockId,
-        string $deliveryType,
-        string $paymentMethod
-    ): Order {
-        return DB::transaction(function () use ($customerName, $housingBlockId, $deliveryType, $paymentMethod) {
+    public function createOrder(array $data): Order
+    {
+        return DB::transaction(function () use ($data) {
             $cartItems = $this->cartService->get();
-            $total = $this->cartService->total();
-
-            // Create order
-            $order = Order::create([
-                'code' => Order::generateCode(),
-                'housing_block_id' => $housingBlockId,
-                'customer_name' => $customerName,
-                'payment_method' => $paymentMethod,
-                'delivery_type' => $deliveryType,
-                'status' => Order::STATUS_PENDING,
-                'total' => $total,
-            ]);
-
-            // Create order items
-            foreach ($cartItems as $cartItem) {
-                $subtotal = $cartItem['price'] * $cartItem['quantity'];
-                
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'item_id' => $cartItem['id'],
-                    'quantity' => $cartItem['quantity'],
-                    'price' => $cartItem['price'],
-                    'subtotal' => $subtotal,
-                ]);
+            
+            if (empty($cartItems)) {
+                throw new \Exception('Keranjang belanja kosong.');
             }
 
-            // Clear cart
+            // 1. Generate Unique Code
+            $code = $this->orderService->generateUniqueCode();
+
+            // 2. Create Order Record
+            $order = Order::create([
+                'code' => $code,
+                'housing_block_id' => $data['housing_block_id'] ?? null,
+                'customer_name' => $data['customer_name'],
+                'payment_method' => $data['payment_method'],
+                'delivery_type' => $data['delivery_type'] ?? 'pickup',
+                'status' => Order::STATUS_PENDING,
+                'total' => 0, // Will update after calculating items
+            ]);
+
+            $total = 0;
+
+            // 3. Process Items with Security Check
+            foreach ($cartItems as $cartItem) {
+                // LOCK the item to ensure existence and price integrity
+                // Also helps preventing race conditions if stock management changes later
+                $item = Item::lockForUpdate()->find($cartItem['id']);
+
+                if (!$item) {
+                    throw new \Exception("Produk '{$cartItem['name']}' tidak ditemukan atau telah dihapus.");
+                }
+
+                // CRITICAL: Use DB price, NEVER trust client/session price
+                $price = $item->sell_price;
+                $quantity = $cartItem['quantity'];
+                $subtotal = $price * $quantity;
+
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'item_id' => $item->id,
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'subtotal' => $subtotal,
+                ]);
+
+                $total += $subtotal;
+            }
+
+            // 4. Update Order Total
+            $order->update(['total' => $total]);
+
+            // 5. Clear Cart
             $this->cartService->clear();
 
             return $order;
