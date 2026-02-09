@@ -18,6 +18,7 @@ class Order extends Model
         'code',
         'housing_block_id',
         'customer_name',
+        'whatsapp_number',
         'payment_method',
         'delivery_type',
         'status',

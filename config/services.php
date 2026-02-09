@@ -35,8 +35,9 @@ return [
         ],
     ],
 
-    'supabase' => [
-        'url' => env('SUPABASE_URL'),
-        'anon_key' => env('SUPABASE_ANON_KEY'),
+    'duitku' => [
+        'merchant_code' => env('DUITKU_MERCHANT_CODE', 'D0001'), // Default sandbox
+        'api_key' => env('DUITKU_API_KEY', 'default-api-key'),
+        'sandbox_mode' => env('DUITKU_SANDBOX_MODE', true),
     ],
 ];

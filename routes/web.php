@@ -7,6 +7,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TrackingController;
+use App\Http\Controllers\WebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,3 +57,6 @@ Route::get('/tracking/{code}', [TrackingController::class, 'show'])->name('track
 // Payment Routes
 Route::get('/payment/{code}', [PaymentController::class, 'show'])->name('payment.show');
 Route::get('/payment/{code}/check', [PaymentController::class, 'check'])->name('payment.check');
+
+// Webhook Routes
+Route::post('/webhook/payment', [WebhookController::class, 'handle'])->name('webhook.payment');

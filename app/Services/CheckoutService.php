@@ -71,6 +71,7 @@ class CheckoutService
                 'code' => $code,
                 'housing_block_id' => $data['housing_block_id'] ?? null,
                 'customer_name' => $data['customer_name'],
+                'whatsapp_number' => $data['whatsapp_number'],
                 'payment_method' => $data['payment_method'],
                 'delivery_type' => $data['delivery_type'] ?? 'pickup',
                 'status' => Order::STATUS_PENDING,

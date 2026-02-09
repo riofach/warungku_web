@@ -29,6 +29,19 @@
                         @enderror
                     </div>
 
+                    <!-- WhatsApp Number -->
+                    <div class="mb-4">
+                        <label for="whatsapp_number" class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp</label>
+                        <input type="tel" name="whatsapp_number" id="whatsapp_number" required
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            value="{{ old('whatsapp_number') }}"
+                            placeholder="Contoh: 08123456789">
+                        <p class="text-xs text-gray-500 mt-1">Nomor ini akan digunakan untuk konfirmasi pesanan.</p>
+                        @error('whatsapp_number')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Delivery Type -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pengambilan</label>

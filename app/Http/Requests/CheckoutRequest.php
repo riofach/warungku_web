@@ -23,7 +23,8 @@ class CheckoutRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_name' => ['required', 'string', 'max:100'],
+            'customer_name' => ['required', 'string', 'max:255'],
+            'whatsapp_number' => ['required', 'string', 'max:20', 'regex:/^08[0-9]{8,13}$/'],
             'delivery_type' => ['required', Rule::in(['delivery', 'pickup'])],
             'payment_method' => [
                 'required', 
@@ -55,6 +56,8 @@ class CheckoutRequest extends FormRequest
     {
         return [
             'customer_name.required' => 'Nama lengkap wajib diisi.',
+            'whatsapp_number.required' => 'Nomor WhatsApp wajib diisi.',
+            'whatsapp_number.regex' => 'Format nomor WhatsApp tidak valid (contoh: 08123456789).',
             'housing_block_id.required' => 'Lokasi (Blok) wajib dipilih untuk pesan antar.',
             'payment_method.required' => 'Metode pembayaran wajib dipilih.',
             'delivery_type.required' => 'Metode pengambilan wajib dipilih.',
