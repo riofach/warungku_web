@@ -19,13 +19,13 @@ class PaymentService
         $merchantCode = config('services.duitku.merchant_code');
         $apiKey = config('services.duitku.api_key');
         $sandboxMode = config('services.duitku.sandbox_mode', true);
-        
+
         $paymentAmount = $order->total;
         $merchantOrderId = $order->code; // Use our order code as Merchant Order ID
         $productDetails = 'Pembayaran Pesanan #' . $order->code;
         $email = 'customer@example.com'; // Default or retrieve from user if authenticated
         $phoneNumber = $order->whatsapp_number;
-        
+
         // Construct Signature for Request: SHA256(merchantCode + timestamp + apiKey)
         $timestamp = round(microtime(true) * 1000); // Unix timestamp in ms
         $signature = hash('sha256', $merchantCode . $timestamp . $apiKey);
@@ -39,33 +39,17 @@ class PaymentService
             'merchantUserInfo' => $order->customer_name,
             'customerVaName' => $order->customer_name,
             'customerDetail' => [
-                'firstName' => $order->customer_name,
-                'lastName' => $order->housingBlock ? '(' . $order->housingBlock->name . ')' : '', // Display Block in Last Name
+                'firstName' => $order->customer_name, // Nama Lengkap
+                'lastName' => $order->housingBlock ? $order->housingBlock->name : '', // Blok Rumah
                 'email' => $email,
                 'phoneNumber' => $phoneNumber,
-                'billingAddress' => [
-                    'firstName' => $order->customer_name,
-                    'address' => $order->housingBlock ? $order->housingBlock->name : 'WarungKu', // Display Block in Address
-                    'city' => 'Jakarta',
-                    'postalCode' => '12345',
-                    'phone' => $phoneNumber,
-                    'countryCode' => 'ID',
-                ],
-                'shippingAddress' => [
-                    'firstName' => $order->customer_name,
-                    'address' => $order->housingBlock ? $order->housingBlock->name : 'WarungKu', // Display Block in Address
-                    'city' => 'Jakarta',
-                    'postalCode' => '12345',
-                    'phone' => $phoneNumber,
-                    'countryCode' => 'ID',
-                ],
             ],
             'callbackUrl' => route('webhook.payment'), // Ensure this is publicly accessible via Ngrok
             'returnUrl' => route('payment.show', $order->code), // Redirect back to our payment page
             'expiryPeriod' => 60, // 60 minutes
         ];
 
-        $url = $sandboxMode 
+        $url = $sandboxMode
             ? 'https://api-sandbox.duitku.com/api/merchant/createInvoice'
             : 'https://api-prod.duitku.com/api/merchant/createInvoice';
 
@@ -79,7 +63,7 @@ class PaymentService
 
             if ($response->successful()) {
                 $result = $response->json();
-                
+
                 if (isset($result['paymentUrl'])) {
                     $order->payment_url = $result['paymentUrl'];
                     $order->payment_token = $result['reference'] ?? null; // Store Duitku Reference
@@ -103,7 +87,7 @@ class PaymentService
     {
         $merchantCode = config('services.duitku.merchant_code');
         $apiKey = config('services.duitku.api_key');
-        
+
         // Extract parameters from callback
         // Duitku sends as POST form data (x-www-form-urlencoded) usually
         $incomingMerchantCode = $request->input('merchantCode');
@@ -113,13 +97,13 @@ class PaymentService
 
         // Verify Merchant Code matches
         if ($incomingMerchantCode !== $merchantCode) {
-             return false;
+            return false;
         }
 
         // Calculate Signature: MD5(merchantCode + amount + merchantOrderId + apiKey)
         // Ensure amount is string/integer without decimals if Duitku sends it that way. 
         // Docs example: '150000' (integer in string).
-        
+
         $params = $merchantCode . $amount . $merchantOrderId . $apiKey;
         $calcSignature = md5($params);
 
@@ -133,7 +117,7 @@ class PaymentService
     {
         $merchantOrderId = $request->input('merchantOrderId');
         $resultCode = $request->input('resultCode'); // '00' for Success, '01' for Pending/Failed
-        
+
         // Find order by code (merchantOrderId)
         $order = Order::where('code', $merchantOrderId)->firstOrFail();
 
@@ -157,12 +141,12 @@ class PaymentService
                 }
             });
         } elseif ($resultCode === '01' || $resultCode === '02') {
-             // 01 is pending/process usually, but sometimes treated as failed depending on flow.
-             // Docs: 02 = Failed.
-             // We'll mark failed for 02.
-             if ($resultCode === '02') {
-                 $order->update(['status' => 'failed']);
-             }
+            // 01 is pending/process usually, but sometimes treated as failed depending on flow.
+            // Docs: 02 = Failed.
+            // We'll mark failed for 02.
+            if ($resultCode === '02') {
+                $order->update(['status' => 'failed']);
+            }
         }
     }
 }
