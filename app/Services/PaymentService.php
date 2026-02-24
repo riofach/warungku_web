@@ -13,21 +13,22 @@ class PaymentService
 {
     /**
      * Generate payment for the order (Integrate Duitku Create Invoice API).
+     *
+     * @return bool true if payment was generated successfully, false otherwise
      */
-    public function generatePayment(Order $order): void
+    public function generatePayment(Order $order): bool
     {
         $merchantCode = config('services.duitku.merchant_code');
         $apiKey = config('services.duitku.api_key');
         $sandboxMode = config('services.duitku.sandbox_mode', true);
 
         $paymentAmount = $order->total;
-        $merchantOrderId = $order->code; // Use our order code as Merchant Order ID
+        $merchantOrderId = $order->code;
         $productDetails = 'Pembayaran Pesanan #' . $order->code;
-        $email = 'customer@example.com'; // Default or retrieve from user if authenticated
+        $email = 'customer@example.com';
         $phoneNumber = $order->whatsapp_number;
 
-        // Construct Signature for Request: SHA256(merchantCode + timestamp + apiKey)
-        $timestamp = round(microtime(true) * 1000); // Unix timestamp in ms
+        $timestamp = round(microtime(true) * 1000);
         $signature = hash('sha256', $merchantCode . $timestamp . $apiKey);
 
         $params = [
@@ -39,14 +40,14 @@ class PaymentService
             'merchantUserInfo' => $order->customer_name,
             'customerVaName' => $order->customer_name,
             'customerDetail' => [
-                'firstName' => $order->customer_name, // Nama Lengkap
-                'lastName' => $order->housingBlock ? $order->housingBlock->name : '', // Blok Rumah
+                'firstName' => $order->customer_name,
+                'lastName' => $order->housingBlock ? $order->housingBlock->name : '',
                 'email' => $email,
                 'phoneNumber' => $phoneNumber,
             ],
-            'callbackUrl' => route('webhook.payment'), // Ensure this is publicly accessible via Ngrok
-            'returnUrl' => route('payment.show', $order->code), // Redirect back to our payment page
-            'expiryPeriod' => 60, // 60 minutes
+            'callbackUrl' => route('webhook.payment'),
+            'returnUrl' => route('payment.show', $order->code),
+            'expiryPeriod' => 60,
         ];
 
         $url = $sandboxMode
@@ -66,18 +67,24 @@ class PaymentService
 
                 if (isset($result['paymentUrl'])) {
                     $order->payment_url = $result['paymentUrl'];
-                    $order->payment_token = $result['reference'] ?? null; // Store Duitku Reference
+                    $order->payment_token = $result['reference'] ?? null;
                     $order->payment_expires_at = Carbon::now()->addMinutes(60);
                     $order->save();
+                    return true;
                 } else {
-                    Log::error('Duitku API Error (No URL): ' . json_encode($result));
+                    $errorMsg = $result['Message'] ?? $result['message'] ?? json_encode($result);
+                    Log::error('Duitku API Error (No URL): ' . $errorMsg);
                 }
             } else {
-                Log::error('Duitku API Request Failed: ' . $response->body());
+                $body = $response->json();
+                $errorMsg = $body['Message'] ?? $body['message'] ?? $response->body();
+                Log::error('Duitku API Request Failed: ' . $errorMsg);
             }
         } catch (\Exception $e) {
             Log::error('Duitku Exception: ' . $e->getMessage());
         }
+
+        return false;
     }
 
     /**
@@ -88,21 +95,14 @@ class PaymentService
         $merchantCode = config('services.duitku.merchant_code');
         $apiKey = config('services.duitku.api_key');
 
-        // Extract parameters from callback
-        // Duitku sends as POST form data (x-www-form-urlencoded) usually
         $incomingMerchantCode = $request->input('merchantCode');
         $amount = $request->input('amount');
         $merchantOrderId = $request->input('merchantOrderId');
         $signature = $request->input('signature');
 
-        // Verify Merchant Code matches
         if ($incomingMerchantCode !== $merchantCode) {
             return false;
         }
-
-        // Calculate Signature: MD5(merchantCode + amount + merchantOrderId + apiKey)
-        // Ensure amount is string/integer without decimals if Duitku sends it that way. 
-        // Docs example: '150000' (integer in string).
 
         $params = $merchantCode . $amount . $merchantOrderId . $apiKey;
         $calcSignature = md5($params);
@@ -116,23 +116,18 @@ class PaymentService
     public function handleWebhook(Request $request): void
     {
         $merchantOrderId = $request->input('merchantOrderId');
-        $resultCode = $request->input('resultCode'); // '00' for Success, '01' for Pending/Failed
+        $resultCode = $request->input('resultCode');
 
-        // Find order by code (merchantOrderId)
         $order = Order::where('code', $merchantOrderId)->firstOrFail();
 
-        // Idempotency check
         if ($order->status === 'paid') {
             return;
         }
 
-        // Success Condition: resultCode == '00'
         if ($resultCode === '00') {
             DB::transaction(function () use ($order) {
-                // Update order status
                 $order->update(['status' => 'paid']);
 
-                // Reduce stock
                 foreach ($order->orderItems as $orderItem) {
                     $item = $orderItem->item;
                     if ($item) {
@@ -140,13 +135,8 @@ class PaymentService
                     }
                 }
             });
-        } elseif ($resultCode === '01' || $resultCode === '02') {
-            // 01 is pending/process usually, but sometimes treated as failed depending on flow.
-            // Docs: 02 = Failed.
-            // We'll mark failed for 02.
-            if ($resultCode === '02') {
-                $order->update(['status' => 'failed']);
-            }
+        } elseif ($resultCode === '02') {
+            $order->update(['status' => 'failed']);
         }
     }
 }

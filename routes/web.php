@@ -53,6 +53,7 @@ Route::get('/closed', function () {
 Route::get('/tracking', [TrackingController::class, 'index'])->name('tracking.index');
 Route::post('/tracking/search', [TrackingController::class, 'search'])->name('tracking.search');
 Route::get('/tracking/{code}', [TrackingController::class, 'show'])->name('tracking.show');
+Route::get('/tracking/{code}/status', [TrackingController::class, 'status'])->name('tracking.status');
 
 // Payment Routes
 Route::get('/payment/{code}', [PaymentController::class, 'show'])->name('payment.show');

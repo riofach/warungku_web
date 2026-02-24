@@ -40,4 +40,9 @@ return [
         'api_key' => env('DUITKU_API_KEY', 'default-api-key'),
         'sandbox_mode' => env('DUITKU_SANDBOX_MODE', true),
     ],
+
+    'supabase' => [
+        'url' => env('SUPABASE_URL'),
+        'anon_key' => env('SUPABASE_ANON_KEY'),
+    ],
 ];

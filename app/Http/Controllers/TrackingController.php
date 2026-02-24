@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class TrackingController extends Controller
 {
@@ -46,6 +47,29 @@ class TrackingController extends Controller
             ->with(['orderItems.item', 'housingBlock'])
             ->firstOrFail();
 
-        return view('tracking.show', compact('order'));
+        $terminalStatuses = ['completed', 'cancelled', 'failed'];
+        $isTerminal = in_array($order->status, $terminalStatuses);
+
+        return view('tracking.show', [
+            'order' => $order,
+            'isTerminal' => $isTerminal,
+        ]);
+    }
+
+    /**
+     * Return current order status as JSON (for polling)
+     */
+    public function status(string $code): JsonResponse
+    {
+        $order = Order::where('code', $code)->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'not_found'], 404);
+        }
+
+        return response()->json([
+            'status' => $order->status,
+            'status_label' => $order->status_label,
+        ]);
     }
 }

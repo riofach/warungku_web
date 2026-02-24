@@ -238,4 +238,54 @@ class TrackingTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Selesai');
     }
+
+    // ==============================================================
+    // Story 12.2: Live Status Updates via Polling (AC1, AC5)
+    // ==============================================================
+
+    public function test_status_endpoint_returns_json(): void
+    {
+        $order = $this->createOrder(['status' => 'processing']);
+
+        $response = $this->getJson(route('tracking.status', $order->code));
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'status' => 'processing',
+            'status_label' => $order->status_label,
+        ]);
+    }
+
+    public function test_status_endpoint_returns_404_for_unknown_code(): void
+    {
+        $response = $this->getJson(route('tracking.status', 'NONEXISTENT'));
+
+        $response->assertStatus(404);
+        $response->assertJson(['error' => 'not_found']);
+    }
+
+    public function test_show_page_includes_polling_script_for_active_order(): void
+    {
+        $order = $this->createOrder(['status' => 'processing']);
+
+        $response = $this->get(route('tracking.show', $order->code));
+
+        $response->assertStatus(200);
+        $response->assertSee('live-indicator', false);
+        $response->assertSee('pollStatus', false);
+        $response->assertSee('POLL_INTERVAL', false);
+    }
+
+    public function test_show_page_excludes_polling_script_for_terminal_status(): void
+    {
+        foreach (['completed', 'cancelled', 'failed'] as $status) {
+            $order = $this->createOrder(['status' => $status, 'code' => 'WRG-20260115-00' . rand(10, 99)]);
+
+            $response = $this->get(route('tracking.show', $order->code));
+
+            $response->assertStatus(200);
+            $response->assertViewHas('isTerminal', true);
+            $response->assertDontSee('pollStatus', false);
+        }
+    }
 }

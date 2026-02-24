@@ -51,23 +51,33 @@
                 };
             @endphp
             <div class="w-full flex justify-center">
-                <span
+                <span id="status-badge"
                     class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold {{ $badgeClass }}">
-                    @if (in_array($order->status, ['cancelled', 'failed']))
-                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    @elseif ($order->status === 'completed')
-                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                    @else
-                        <span class="w-2 h-2 rounded-full bg-current animate-pulse shrink-0"></span>
-                    @endif
-                    <span class="leading-none">{{ $order->status_label }}</span>
+                    <span id="status-badge-icon">
+                        @if (in_array($order->status, ['cancelled', 'failed']))
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        @elseif ($order->status === 'completed')
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        @else
+                            <span class="w-2 h-2 rounded-full bg-current animate-pulse shrink-0"></span>
+                        @endif
+                    </span>
+                    <span id="status-badge-text" class="leading-none">{{ $order->status_label }}</span>
                 </span>
             </div>
+
+            {{-- Live Indicator --}}
+            @if (!$isTerminal)
+                <div id="live-indicator" class="flex items-center justify-center gap-1.5 mt-3" style="display:none">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="text-xs text-green-600 font-medium">Live</span>
+                </div>
+            @endif
         </div>
 
         {{-- Order Timeline --}}
@@ -115,8 +125,8 @@
                 Status Perjalanan Pesanan
             </h2>
 
-            @if ($isCancelled)
-                {{-- Cancelled/Failed State --}}
+            {{-- Cancelled/Failed State --}}
+            <div id="cancelled-section" @if (!$isCancelled) style="display:none" @endif>
                 <div class="flex items-center gap-3 p-4 bg-error/10 rounded-lg">
                     <div class="w-10 h-10 rounded-full bg-error flex items-center justify-center shrink-0">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,30 +135,31 @@
                         </svg>
                     </div>
                     <div>
-                        <p class="font-semibold text-error">{{ $order->status_label }}</p>
+                        <p id="cancelled-status-text" class="font-semibold text-error">{{ $order->status_label }}</p>
                         <p class="text-sm text-text-secondary">Pesanan ini telah dibatalkan atau gagal diproses.</p>
                     </div>
                 </div>
-            @else
-                {{-- Normal Timeline --}}
+            </div>
+
+            {{-- Normal Timeline --}}
+            <div id="timeline-section" @if ($isCancelled) style="display:none" @endif>
                 <div class="space-y-0">
                     @foreach ($steps as $index => $step)
                         @php
                             $stepIndex = array_search($step['key'], $statusOrder);
                             $isDone = $stepIndex <= $currentIndex;
                             $isActive = $stepIndex === $currentIndex;
-                            $isCompleted = $isDone && !$isActive; // truly past, not current
+                            $isCompleted = $isDone && !$isActive;
                             $isLast = $index === count($steps) - 1;
                             $nextIsActive = !$isLast && $stepIndex + 1 === $currentIndex;
                         @endphp
 
-                        {{-- Step row: icon + label side by side, vertically centered --}}
+                        {{-- Step row --}}
                         <div class="flex items-center gap-3">
-
-                            {{-- Icon column: fixed w-9 so connector below can line up --}}
-                            <div class="w-9 shrink-0 flex items-center justify-center">
-                                @if ($isActive)
-                                    {{-- Active: filled circle + outer ping ring --}}
+                            {{-- Icon column --}}
+                            <div class="w-9 shrink-0 flex items-center justify-center" id="step-icon-{{ $step['key'] }}"
+                                data-icon="{{ $step['icon'] }}">
+                                @if ($isActive && !$isTerminal)
                                     <div class="relative flex items-center justify-center">
                                         <span class="absolute w-12 h-12 rounded-full bg-primary animate-ping"
                                             style="opacity:0.18;"></span>
@@ -161,8 +172,7 @@
                                             </svg>
                                         </div>
                                     </div>
-                                @elseif ($isCompleted)
-                                    {{-- Completed: solid blue circle --}}
+                                @elseif ($isCompleted || ($isActive && $isTerminal))
                                     <div
                                         class="w-9 h-9 rounded-full flex items-center justify-center bg-primary border-2 border-primary">
                                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
@@ -172,7 +182,6 @@
                                         </svg>
                                     </div>
                                 @else
-                                    {{-- Upcoming: grey circle --}}
                                     <div
                                         class="w-9 h-9 rounded-full flex items-center justify-center bg-background border-2 border-border">
                                         <svg class="w-4 h-4 text-text-tertiary" fill="none" stroke="currentColor"
@@ -184,31 +193,36 @@
                                 @endif
                             </div>
 
-                            {{-- Label  --}}
+                            {{-- Label --}}
                             <div class="flex-1 min-w-0 py-3">
-                                <p
+                                <p id="step-text-{{ $step['key'] }}"
                                     class="font-semibold text-sm leading-tight
                                     {{ $isDone ? 'text-text-primary' : 'text-text-tertiary' }}
-                                    {{ $isActive ? 'text-primary' : '' }}">
+                                    {{ $isActive && $isTerminal ? 'text-success' : ($isActive ? 'text-primary' : '') }}">
                                     {{ $step['label'] }}
                                 </p>
-                                @if ($isActive)
-                                    <p class="text-xs text-primary font-medium mt-1 flex items-center gap-1">
-                                        <span class="animate-pulse">● Sedang diproses...</span>
-                                    </p>
-                                @elseif ($isCompleted && $step['key'] === 'pending')
-                                    <p class="text-xs text-text-secondary mt-0.5">
-                                        {{ \Carbon\Carbon::parse($order->created_at)->translatedFormat('d M Y, H:i') }}
-                                    </p>
-                                @endif
+                                <div id="step-sublabel-{{ $step['key'] }}">
+                                    @if ($isActive && $isTerminal)
+                                        <p class="text-xs text-success font-medium mt-1 flex items-center gap-1">
+                                            ✓ Pesanan selesai!
+                                        </p>
+                                    @elseif ($isActive)
+                                        <p class="text-xs text-primary font-medium mt-1 flex items-center gap-1">
+                                            <span class="animate-pulse">● Sedang diproses...</span>
+                                        </p>
+                                    @elseif ($isCompleted && $step['key'] === 'pending')
+                                        <p class="text-xs text-text-secondary mt-0.5">
+                                            {{ \Carbon\Carbon::parse($order->created_at)->translatedFormat('d M Y, H:i') }}
+                                        </p>
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
                         {{-- Connector between steps --}}
                         @if (!$isLast)
-                            <div class="w-9 shrink-0 flex justify-center">
+                            <div class="w-9 shrink-0 flex justify-center" id="step-connector-{{ $step['key'] }}">
                                 @if ($nextIsActive)
-                                    {{-- 3 breathing dots leading to the active step --}}
                                     <div class="flex flex-col items-center gap-[5px] py-1">
                                         <span class="w-2 h-2 rounded-full bg-primary animate-pulse"
                                             style="animation-duration:1.2s; animation-delay:0s"></span>
@@ -226,7 +240,7 @@
                         @endif
                     @endforeach
                 </div>
-            @endif
+            </div>
         </div>
 
         {{-- Order Details --}}
@@ -298,7 +312,7 @@
             @php
                 $canDownload = in_array($order->status, ['paid', 'processing', 'ready', 'delivered', 'completed']);
             @endphp
-            <button
+            <button id="invoice-btn"
                 @if ($canDownload) @click="$dispatch('toast', { message: 'Fitur unduh invoice akan segera hadir!', type: 'warning' })"
             @else
                 disabled @endif
@@ -345,3 +359,290 @@
         </div>
     </div>
 @endsection
+
+@if (!$isTerminal)
+    @push('scripts')
+        <script>
+            (function() {
+                'use strict';
+
+                var POLL_URL = @json(route('tracking.status', $order->code));
+                var POLL_INTERVAL = 10000;
+                var currentStatus = @json($order->status);
+                var pollingTimer = null;
+
+                var STEPS = [{
+                        key: 'pending',
+                        soIdx: 0
+                    },
+                    {
+                        key: 'paid',
+                        soIdx: 1
+                    },
+                    {
+                        key: 'processing',
+                        soIdx: 2
+                    },
+                    {
+                        key: 'ready',
+                        soIdx: 3
+                    },
+                    {
+                        key: 'completed',
+                        soIdx: 5
+                    },
+                ];
+
+                var STATUS_CFG = {
+                    pending: {
+                        label: 'Menunggu Pembayaran',
+                        ci: 0,
+                        badge: 'bg-warning/15 text-warning border border-warning/40',
+                        icon: 'pulse'
+                    },
+                    paid: {
+                        label: 'Dibayar',
+                        ci: 1,
+                        badge: 'bg-blue-100 text-blue-700 border border-blue-300',
+                        icon: 'pulse'
+                    },
+                    processing: {
+                        label: 'Sedang Diproses',
+                        ci: 2,
+                        badge: 'bg-indigo-100 text-indigo-700 border border-indigo-300',
+                        icon: 'pulse'
+                    },
+                    ready: {
+                        label: 'Siap Diambil/Antar',
+                        ci: 3,
+                        badge: 'bg-success/15 text-success border border-success/40',
+                        icon: 'pulse'
+                    },
+                    delivered: {
+                        label: 'Sedang Diantar',
+                        ci: 3,
+                        badge: 'bg-teal-100 text-teal-700 border border-teal-300',
+                        icon: 'pulse'
+                    },
+                    completed: {
+                        label: 'Selesai',
+                        ci: 5,
+                        badge: 'bg-success/15 text-success border border-success/40',
+                        icon: 'check'
+                    },
+                    cancelled: {
+                        label: 'Dibatalkan',
+                        ci: null,
+                        badge: 'bg-error/15 text-error border border-error/40',
+                        icon: 'x'
+                    },
+                    failed: {
+                        label: 'Gagal',
+                        ci: null,
+                        badge: 'bg-error/15 text-error border border-error/40',
+                        icon: 'x'
+                    },
+                };
+
+                var BADGE_CLASSES = [
+                    'bg-warning/15', 'text-warning', 'border-warning/40',
+                    'bg-blue-100', 'text-blue-700', 'border-blue-300',
+                    'bg-indigo-100', 'text-indigo-700', 'border-indigo-300',
+                    'bg-success/15', 'text-success', 'border-success/40',
+                    'bg-teal-100', 'text-teal-700', 'border-teal-300',
+                    'bg-error/15', 'text-error', 'border-error/40',
+                    'bg-gray-100', 'text-gray-700', 'border-gray-300',
+                ];
+
+                function svgIcon(path, cls) {
+                    return '<svg class="' + cls +
+                        '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="' +
+                        path + '"/></svg>';
+                }
+
+                function makeActiveIcon(p) {
+                    return '<div class="relative flex items-center justify-center">' +
+                        '<span class="absolute w-12 h-12 rounded-full bg-primary animate-ping" style="opacity:0.18;"></span>' +
+                        '<div class="relative z-10 w-9 h-9 rounded-full flex items-center justify-center bg-primary border-2 border-primary shadow">' +
+                        svgIcon(p, 'w-4 h-4 text-white') + '</div></div>';
+                }
+
+                function makeCompletedIcon(p) {
+                    return '<div class="w-9 h-9 rounded-full flex items-center justify-center bg-primary border-2 border-primary">' +
+                        svgIcon(p, 'w-4 h-4 text-white') + '</div>';
+                }
+
+                function makeUpcomingIcon(p) {
+                    return '<div class="w-9 h-9 rounded-full flex items-center justify-center bg-background border-2 border-border">' +
+                        svgIcon(p, 'w-4 h-4 text-text-tertiary') + '</div>';
+                }
+
+                function makeBreathingDots() {
+                    return '<div class="flex flex-col items-center gap-[5px] py-1">' +
+                        '<span class="w-2 h-2 rounded-full bg-primary animate-pulse" style="animation-duration:1.2s;animation-delay:0s"></span>' +
+                        '<span class="w-2 h-2 rounded-full bg-primary animate-pulse" style="animation-duration:1.2s;animation-delay:0.4s"></span>' +
+                        '<span class="w-2 h-2 rounded-full bg-primary animate-pulse" style="animation-duration:1.2s;animation-delay:0.8s"></span>' +
+                        '</div>';
+                }
+
+                function makeLine(done) {
+                    return '<div class="w-0.5 min-h-[28px] rounded-full ' + (done ? 'bg-primary' : 'bg-border') +
+                        '"></div>';
+                }
+
+                function flash(el) {
+                    if (!el) return;
+                    el.style.transition = 'background-color 0.4s ease';
+                    el.style.backgroundColor = 'rgba(37,99,235,0.08)';
+                    setTimeout(function() {
+                        el.style.backgroundColor = '';
+                    }, 1200);
+                }
+
+                function updateTrackingStatus(newStatus) {
+                    var cfg = STATUS_CFG[newStatus];
+                    if (!cfg) return;
+
+                    var isTerminal = (newStatus === 'cancelled' || newStatus === 'failed' || newStatus === 'completed');
+                    var ci = cfg.ci;
+
+                    var badge = document.getElementById('status-badge');
+                    if (badge) {
+                        BADGE_CLASSES.forEach(function(c) {
+                            badge.classList.remove(c);
+                        });
+                        cfg.badge.split(' ').forEach(function(c) {
+                            if (c) badge.classList.add(c);
+                        });
+                        flash(badge);
+                    }
+                    var badgeIcon = document.getElementById('status-badge-icon');
+                    if (badgeIcon) {
+                        if (cfg.icon === 'check') badgeIcon.innerHTML = svgIcon('M5 13l4 4L19 7', 'w-4 h-4 shrink-0');
+                        else if (cfg.icon === 'x') badgeIcon.innerHTML = svgIcon('M6 18L18 6M6 6l12 12',
+                            'w-4 h-4 shrink-0');
+                        else badgeIcon.innerHTML =
+                            '<span class="w-2 h-2 rounded-full bg-current animate-pulse shrink-0"></span>';
+                    }
+                    var badgeText = document.getElementById('status-badge-text');
+                    if (badgeText) badgeText.textContent = cfg.label;
+
+                    var tlSec = document.getElementById('timeline-section');
+                    var cxSec = document.getElementById('cancelled-section');
+                    if (newStatus === 'cancelled' || newStatus === 'failed') {
+                        if (tlSec) tlSec.style.display = 'none';
+                        if (cxSec) cxSec.style.removeProperty('display');
+                        var cxText = document.getElementById('cancelled-status-text');
+                        if (cxText) cxText.textContent = cfg.label;
+                    } else {
+                        if (tlSec) tlSec.style.removeProperty('display');
+                        if (cxSec) cxSec.style.display = 'none';
+
+                        STEPS.forEach(function(step, idx) {
+                            var isDone = step.soIdx <= ci;
+                            var isActive = step.soIdx === ci;
+                            var isDoneNotActive = isDone && !isActive;
+                            var isLast = idx === STEPS.length - 1;
+                            var nextStep = !isLast ? STEPS[idx + 1] : null;
+                            var nextIsActive = nextStep && nextStep.soIdx === ci;
+
+                            var iconEl = document.getElementById('step-icon-' + step.key);
+                            if (iconEl) {
+                                var p = iconEl.getAttribute('data-icon') || '';
+                                // Terminal status: no ping animation, all done steps use completed icon
+                                if (isActive && isTerminal) iconEl.innerHTML = makeCompletedIcon(p);
+                                else if (isActive) iconEl.innerHTML = makeActiveIcon(p);
+                                else if (isDoneNotActive) iconEl.innerHTML = makeCompletedIcon(p);
+                                else iconEl.innerHTML = makeUpcomingIcon(p);
+                            }
+
+                            var textEl = document.getElementById('step-text-' + step.key);
+                            if (textEl) {
+                                textEl.className = 'font-semibold text-sm leading-tight';
+                                if (isActive && isTerminal) textEl.classList.add('text-success');
+                                else if (isActive) textEl.classList.add('text-primary');
+                                else if (isDone) textEl.classList.add('text-text-primary');
+                                else textEl.classList.add('text-text-tertiary');
+                            }
+
+                            var subEl = document.getElementById('step-sublabel-' + step.key);
+                            if (subEl) {
+                                if (isActive && isTerminal) {
+                                    // Completed: show checkmark, not "Sedang diproses"
+                                    subEl.innerHTML =
+                                        '<p class="text-xs text-success font-medium mt-1 flex items-center gap-1">✓ Pesanan selesai!</p>';
+                                } else if (isActive) {
+                                    subEl.innerHTML =
+                                        '<p class="text-xs text-primary font-medium mt-1 flex items-center gap-1"><span class="animate-pulse">● Sedang diproses...</span></p>';
+                                } else if (!(isDoneNotActive && step.key === 'pending')) {
+                                    subEl.innerHTML = '';
+                                }
+                            }
+
+                            if (!isLast) {
+                                var connEl = document.getElementById('step-connector-' + step.key);
+                                if (connEl) {
+                                    // Terminal: all connectors are solid lines
+                                    if (isTerminal) {
+                                        connEl.innerHTML = makeLine(isDone);
+                                    } else {
+                                        connEl.innerHTML = nextIsActive ? makeBreathingDots() : makeLine(
+                                            isDoneNotActive);
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    var canDl = ['paid', 'processing', 'ready', 'delivered', 'completed'].indexOf(newStatus) !== -1;
+                    var invBtn = document.getElementById('invoice-btn');
+                    if (invBtn) {
+                        invBtn.disabled = !canDl;
+                        invBtn.title = canDl ? 'Unduh Invoice' : 'Invoice tersedia setelah pembayaran dikonfirmasi';
+                        invBtn.className =
+                            'flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg font-medium text-sm border transition-colors ' +
+                            (canDl ?
+                                'border-primary text-primary hover:bg-primary/10 cursor-pointer' :
+                                'border-border text-text-tertiary cursor-not-allowed bg-background/50');
+                    }
+
+                    if (isTerminal && pollingTimer) {
+                        clearInterval(pollingTimer);
+                        pollingTimer = null;
+                        var ind = document.getElementById('live-indicator');
+                        if (ind) ind.style.display = 'none';
+                    }
+                }
+
+                function pollStatus() {
+                    fetch(POLL_URL, {
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(function(res) {
+                            return res.json();
+                        })
+                        .then(function(data) {
+                            if (data.status && data.status !== currentStatus) {
+                                currentStatus = data.status;
+                                updateTrackingStatus(currentStatus);
+                            }
+                        })
+                        .catch(function(err) {
+                            console.warn('[Polling] Error:', err);
+                        });
+                }
+
+                // Show live indicator & start polling
+                var indicator = document.getElementById('live-indicator');
+                if (indicator) indicator.style.removeProperty('display');
+                pollingTimer = setInterval(pollStatus, POLL_INTERVAL);
+
+                window.addEventListener('beforeunload', function() {
+                    if (pollingTimer) clearInterval(pollingTimer);
+                });
+            })();
+        </script>
+    @endpush
+@endif

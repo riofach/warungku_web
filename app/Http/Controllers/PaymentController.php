@@ -31,8 +31,16 @@ class PaymentController extends Controller
 
         // Generate payment URL if missing
         if (empty($order->payment_url)) {
-            $this->paymentService->generatePayment($order);
-            $order->refresh();
+            $success = $this->paymentService->generatePayment($order);
+
+            if ($success) {
+                $order->refresh();
+            } else {
+                // API failed — show error but still render the page
+                // The view handles null payment_url gracefully
+                session()->flash('payment_error', 'Gagal menghubungi payment gateway. Silakan refresh halaman atau coba beberapa saat lagi.');
+                $order->refresh();
+            }
         }
 
         return view('checkout.payment', compact('order'));
