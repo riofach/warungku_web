@@ -24,10 +24,14 @@ class TrackingController extends Controller
             'code' => 'required|string',
         ]);
 
-        $order = Order::where('code', $request->code)->first();
+        $code = strtoupper(trim($request->code));
+        $order = Order::where('code', $code)->first();
 
         if (!$order) {
-            return back()->with('error', 'Pesanan tidak ditemukan');
+            return back()
+                ->with('error', "Pesanan dengan kode {$code} tidak ditemukan")
+                ->with('searched_code', $code)
+                ->withInput();
         }
 
         return redirect()->route('tracking.show', $order->code);
