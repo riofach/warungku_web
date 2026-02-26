@@ -383,4 +383,68 @@ class TrackingTest extends TestCase
             $response->assertSessionHas('error');
         }
     }
+
+    // ==============================================================
+    // Story 12.4: Contact Admin via WhatsApp (AC1–AC4)
+    // ==============================================================
+
+    /** @test AC1, AC4 — WhatsApp button shows correct wa.me URL when number configured */
+    public function test_should_show_whatsapp_button_with_correct_url_when_number_configured(): void
+    {
+        \App\Models\Setting::setValue('whatsapp_number', '6281234567890');
+        $order = $this->createOrder(['status' => 'paid']);
+
+        $response = $this->get(route('tracking.show', $order->code));
+
+        $response->assertStatus(200);
+        $response->assertSee('https://wa.me/6281234567890', false);
+        $response->assertSee(urlencode("Halo Admin, saya ingin menanyakan pesanan dengan kode: {$order->code}"), false);
+        $response->assertSee('Chat Admin');
+    }
+
+    /** @test AC2 — WhatsApp button shows fallback href='#' with toast when number not configured */
+    public function test_should_show_whatsapp_button_with_fallback_when_number_not_configured(): void
+    {
+        \App\Models\Setting::setValue('whatsapp_number', '');
+        $order = $this->createOrder(['status' => 'paid']);
+
+        $response = $this->get(route('tracking.show', $order->code));
+
+        $response->assertStatus(200);
+        $response->assertSee('Chat Admin');
+        $response->assertSee('Nomor WhatsApp belum dikonfigurasi', false);
+    }
+
+    /** @test AC3 — WhatsApp button is visible for all order statuses */
+    public function test_should_show_whatsapp_button_for_all_order_statuses(): void
+    {
+        \App\Models\Setting::setValue('whatsapp_number', '6281234567890');
+
+        $statuses = ['pending', 'paid', 'processing', 'ready', 'delivered', 'completed', 'cancelled', 'failed'];
+
+        foreach ($statuses as $status) {
+            $order = $this->createOrder([
+                'status' => $status,
+                'code' => 'WRG-20260115-' . sprintf('%04d', rand(1000, 9999)),
+            ]);
+
+            $response = $this->get(route('tracking.show', $order->code));
+
+            $response->assertStatus(200);
+            $response->assertSee('Chat Admin'); // button selalu terlihat
+            $response->assertSee('https://wa.me/6281234567890', false);
+        }
+    }
+
+    /** @test AC1, AC4 — Pre-filled WhatsApp message contains the order code */
+    public function test_whatsapp_message_contains_order_code(): void
+    {
+        \App\Models\Setting::setValue('whatsapp_number', '6281234567890');
+        $order = $this->createOrder(['status' => 'paid']);
+
+        $response = $this->get(route('tracking.show', $order->code));
+
+        $expectedMessage = urlencode("Halo Admin, saya ingin menanyakan pesanan dengan kode: {$order->code}");
+        $response->assertSee($expectedMessage, false);
+    }
 }
