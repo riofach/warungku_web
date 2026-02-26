@@ -312,21 +312,27 @@
             @php
                 $canDownload = in_array($order->status, ['paid', 'processing', 'ready', 'delivered', 'completed']);
             @endphp
-            <button id="invoice-btn"
-                @if ($canDownload) @click="$dispatch('toast', { message: 'Fitur unduh invoice akan segera hadir!', type: 'warning' })"
+            @if ($canDownload)
+                <a id="invoice-btn" href="{{ route('tracking.invoice', $order->code) }}"
+                    data-invoice-url="{{ route('tracking.invoice', $order->code) }}" title="Unduh Invoice"
+                    class="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg font-medium text-sm border transition-colors border-primary text-primary hover:bg-primary/10 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download Invoice
+                </a>
             @else
-                disabled @endif
-                title="{{ $canDownload ? 'Unduh Invoice' : 'Invoice tersedia setelah pembayaran dikonfirmasi' }}"
-                class="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg font-medium text-sm border transition-colors
-                {{ $canDownload
-                    ? 'border-primary text-primary hover:bg-primary/10 cursor-pointer'
-                    : 'border-border text-text-tertiary cursor-not-allowed bg-background/50' }}">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Download Invoice
-            </button>
+                <button id="invoice-btn" disabled data-invoice-url="{{ route('tracking.invoice', $order->code) }}"
+                    title="Invoice tersedia setelah pembayaran dikonfirmasi"
+                    class="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg font-medium text-sm border transition-colors border-border text-text-tertiary cursor-not-allowed bg-background/50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download Invoice
+                </button>
+            @endif
 
             {{-- Chat Admin --}}
             @php
@@ -597,13 +603,25 @@
                     var canDl = ['paid', 'processing', 'ready', 'delivered', 'completed'].indexOf(newStatus) !== -1;
                     var invBtn = document.getElementById('invoice-btn');
                     if (invBtn) {
-                        invBtn.disabled = !canDl;
-                        invBtn.title = canDl ? 'Unduh Invoice' : 'Invoice tersedia setelah pembayaran dikonfirmasi';
-                        invBtn.className =
-                            'flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg font-medium text-sm border transition-colors ' +
-                            (canDl ?
-                                'border-primary text-primary hover:bg-primary/10 cursor-pointer' :
-                                'border-border text-text-tertiary cursor-not-allowed bg-background/50');
+                        var invoiceUrl = invBtn.getAttribute('data-invoice-url');
+                        var svgIcon = invBtn.querySelector('svg') ? invBtn.querySelector('svg').outerHTML : '';
+                        if (canDl) {
+                            // Replace disabled button with a clickable anchor
+                            var newEl = document.createElement('a');
+                            newEl.id = 'invoice-btn';
+                            newEl.href = invoiceUrl;
+                            newEl.setAttribute('data-invoice-url', invoiceUrl);
+                            newEl.title = 'Unduh Invoice';
+                            newEl.className =
+                                'flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg font-medium text-sm border transition-colors border-primary text-primary hover:bg-primary/10 cursor-pointer';
+                            newEl.innerHTML = svgIcon + ' Download Invoice';
+                            invBtn.replaceWith(newEl);
+                        } else {
+                            invBtn.disabled = true;
+                            invBtn.title = 'Invoice tersedia setelah pembayaran dikonfirmasi';
+                            invBtn.className =
+                                'flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg font-medium text-sm border transition-colors border-border text-text-tertiary cursor-not-allowed bg-background/50';
+                        }
                     }
 
                     if (isTerminal && pollingTimer) {

@@ -54,6 +54,7 @@ Route::get('/tracking', [TrackingController::class, 'index'])->name('tracking.in
 Route::post('/tracking/search', [TrackingController::class, 'search'])->name('tracking.search');
 Route::get('/tracking/{code}', [TrackingController::class, 'show'])->name('tracking.show');
 Route::get('/tracking/{code}/status', [TrackingController::class, 'status'])->name('tracking.status');
+Route::get('/tracking/{code}/invoice', [TrackingController::class, 'downloadInvoice'])->name('tracking.invoice');
 
 // Payment Routes
 Route::get('/payment/{code}', [PaymentController::class, 'show'])->name('payment.show');

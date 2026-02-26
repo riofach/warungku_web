@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TrackingController extends Controller
 {
@@ -71,5 +73,31 @@ class TrackingController extends Controller
             'status' => $order->status,
             'status_label' => $order->status_label,
         ]);
+    }
+
+    /**
+     * Download invoice PDF for a paid/completed order
+     */
+    public function downloadInvoice(string $code)
+    {
+        $order = Order::where('code', $code)
+            ->with(['orderItems.item', 'housingBlock'])
+            ->first();
+
+        if (!$order) {
+            abort(404);
+        }
+
+        $downloadableStatuses = ['paid', 'processing', 'ready', 'delivered', 'completed'];
+
+        if (!in_array($order->status, $downloadableStatuses)) {
+            return back()->with('error', 'Invoice belum tersedia. Pesanan belum dibayar.');
+        }
+
+        $warungName = Setting::getWarungName();
+
+        $pdf = Pdf::loadView('invoice.pdf', compact('order', 'warungName'));
+
+        return $pdf->download("Invoice-{$order->code}.pdf");
     }
 }

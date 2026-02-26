@@ -288,4 +288,99 @@ class TrackingTest extends TestCase
             $response->assertDontSee('pollStatus', false);
         }
     }
+
+    // ==============================================================
+    // Story 12.3: Invoice Download (AC1-AC5)
+    // ==============================================================
+
+    /** @test AC2, AC3 — PDF downloaded for paid order */
+    public function test_should_download_invoice_for_paid_order(): void
+    {
+        $order = $this->createOrder(['status' => 'paid']);
+
+        $response = $this->get(route('tracking.invoice', $order->code));
+
+        $response->assertStatus(200);
+        $response->assertHeader('content-type', 'application/pdf');
+        $this->assertStringContainsString(
+            'Invoice-' . $order->code,
+            $response->headers->get('content-disposition') ?? ''
+        );
+    }
+
+    /** @test AC4 — pending order redirects with error message */
+    public function test_should_block_invoice_for_pending_order(): void
+    {
+        $order = $this->createOrder(['status' => 'pending']);
+
+        $response = $this->get(route('tracking.invoice', $order->code));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString(
+            'belum dibayar',
+            session('error')
+        );
+    }
+
+    /** @test AC4 — non-existent code returns 404 */
+    public function test_should_return_404_for_non_existent_order_invoice(): void
+    {
+        $response = $this->get(route('tracking.invoice', 'WRG-99999999-9999'));
+
+        $response->assertStatus(404);
+    }
+
+    /** @test AC2 — PDF content contains expected order info */
+    public function test_invoice_pdf_contains_order_code_and_customer_name(): void
+    {
+        $order = $this->createOrder([
+            'status' => 'paid',
+            'customer_name' => 'Siti Nurhaliza',
+        ]);
+        $order->load(['orderItems.item', 'housingBlock']);
+
+        // Render the Blade template as HTML to verify content (PDF is binary, assertSee won't work)
+        $html = view('invoice.pdf', [
+            'order' => $order,
+            'warungName' => \App\Models\Setting::getWarungName(),
+        ])->render();
+
+        $this->assertStringContainsString($order->code, $html);
+        $this->assertStringContainsString('Siti Nurhaliza', $html);
+        $this->assertStringContainsString('Nasi Goreng', $html); // item created in createOrder()
+        $this->assertStringContainsString('Invoice Pesanan', $html);
+    }
+
+    /** @test AC1, AC2 — processing/ready/completed orders can download invoice */
+    public function test_should_download_invoice_for_processing_ready_completed_orders(): void
+    {
+        foreach (['processing', 'ready', 'delivered', 'completed'] as $status) {
+            $order = $this->createOrder([
+                'status' => $status,
+                'code' => 'WRG-20260115-0' . rand(100, 999),
+            ]);
+
+            $response = $this->get(route('tracking.invoice', $order->code));
+
+            $response->assertStatus(200); // status: $status
+            $response->assertHeader('content-type', 'application/pdf');
+        }
+    }
+
+    /** @test AC1, AC4 — cancelled and failed orders cannot download invoice */
+    public function test_should_block_invoice_for_cancelled_and_failed_orders(): void
+    {
+        foreach (['cancelled', 'failed'] as $status) {
+            $order = $this->createOrder([
+                'status' => $status,
+                'code' => 'WRG-20260115-0' . rand(100, 999),
+            ]);
+
+            $response = $this->get(route('tracking.invoice', $order->code));
+
+            $response->assertRedirect();
+            $response->assertSessionHas('error');
+        }
+    }
 }
