@@ -395,7 +395,7 @@
                     },
                     {
                         key: 'completed',
-                        soIdx: 5
+                        soIdx: 4 // Sequential — no gap (delivered maps to ready visually)
                     },
                 ];
 
@@ -432,7 +432,7 @@
                     },
                     completed: {
                         label: 'Selesai',
-                        ci: 5,
+                        ci: 4, // Fixed: was 5, should be 4 (sequential)
                         badge: 'bg-success/15 text-success border border-success/40',
                         icon: 'check'
                     },
@@ -633,7 +633,9 @@
                 }
 
                 function pollStatus() {
-                    fetch(POLL_URL, {
+                    // Add timestamp to bust any browser or CDN cache
+                    var url = POLL_URL + '?_t=' + Date.now();
+                    fetch(url, {
                             headers: {
                                 'Accept': 'application/json'
                             }
@@ -644,7 +646,14 @@
                         .then(function(data) {
                             if (data.status && data.status !== currentStatus) {
                                 currentStatus = data.status;
-                                updateTrackingStatus(currentStatus);
+                                var terminalStatuses = ['completed', 'cancelled', 'failed'];
+                                if (terminalStatuses.indexOf(currentStatus) !== -1) {
+                                    // Reload page on terminal status — guarantees correct
+                                    // server-rendered state without JS DOM manipulation risk
+                                    window.location.reload();
+                                } else {
+                                    updateTrackingStatus(currentStatus);
+                                }
                             }
                         })
                         .catch(function(err) {

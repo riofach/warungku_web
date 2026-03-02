@@ -72,7 +72,9 @@ class TrackingController extends Controller
         return response()->json([
             'status' => $order->status,
             'status_label' => $order->status_label,
-        ]);
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**
