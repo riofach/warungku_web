@@ -48,10 +48,21 @@ class PaymentController extends Controller
 
     /**
      * Check order status via JSON (for polling).
+     * Also verifies payment status directly with Duitku API as webhook fallback.
      */
     public function check(string $code): JsonResponse
     {
         $order = Order::where('code', $code)->firstOrFail();
+
+        // Fallback: If order is still pending, check Duitku API directly
+        if ($order->status === Order::STATUS_PENDING) {
+            $isPaid = $this->paymentService->checkPaymentStatus($order);
+            if ($isPaid) {
+                // Process payment success (idempotent - safe to call multiple times)
+                $this->paymentService->processPaymentSuccess($order);
+                $order->refresh(); // Reload from DB to get updated status
+            }
+        }
 
         return response()->json([
             'status' => $order->status,

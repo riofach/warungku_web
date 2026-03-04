@@ -12,6 +12,98 @@ use Illuminate\Support\Facades\Log;
 class PaymentService
 {
     /**
+     * Single source of truth: process a successful payment.
+     * Update order status to 'paid' and reduce stock atomically.
+     * Safe to call multiple times (idempotent - checks if already paid).
+     */
+    public function processPaymentSuccess(Order $order): void
+    {
+        // Idempotent: skip if already processed
+        if ($order->status === 'paid' || $order->status === 'processing' ||
+            $order->status === 'ready' || $order->status === 'completed') {
+            Log::info('PaymentService: Order already processed, skipping.', ['code' => $order->code, 'status' => $order->status]);
+            return;
+        }
+
+        DB::transaction(function () use ($order) {
+            // 1. Update order status
+            $order->update(['status' => 'paid']);
+
+            // 2. Reduce stock via Supabase RPC function (more robust than Eloquent)
+            try {
+                DB::select('SELECT reduce_stock_for_order(?::uuid)', [$order->id]);
+                Log::info('PaymentService: Stock reduced via RPC for order', ['code' => $order->code]);
+            } catch (\Exception $rpcException) {
+                // Fallback: reduce stock via Eloquent ORM if RPC fails
+                Log::warning('PaymentService: RPC failed, falling back to Eloquent.', ['error' => $rpcException->getMessage()]);
+                foreach ($order->orderItems as $orderItem) {
+                    $item = $orderItem->item;
+                    if ($item) {
+                        $item->decrement('stock', $orderItem->quantity);
+                        Log::info('PaymentService: Stock decremented via Eloquent', [
+                            'item_id' => $item->id,
+                            'quantity' => $orderItem->quantity,
+                        ]);
+                    } else {
+                        Log::error('PaymentService: Item not found for orderItem', ['order_item_id' => $orderItem->id]);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Check payment status from Duitku API directly.
+     * Returns true if payment is confirmed paid, false otherwise.
+     */
+    public function checkPaymentStatus(Order $order): bool
+    {
+        $merchantCode = config('services.duitku.merchant_code');
+        $apiKey = config('services.duitku.api_key');
+        $sandboxMode = config('services.duitku.sandbox_mode', true);
+
+        $timestamp = round(microtime(true) * 1000);
+        $signature = hash('sha256', $merchantCode . $timestamp . $apiKey);
+
+        $url = $sandboxMode
+            ? 'https://api-sandbox.duitku.com/api/merchant/transactionStatus'
+            : 'https://api-prod.duitku.com/api/merchant/transactionStatus';
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'x-duitku-signature' => $signature,
+                'x-duitku-timestamp' => $timestamp,
+                'x-duitku-merchantcode' => $merchantCode,
+            ])->post($url, [
+                'merchantCode' => $merchantCode,
+                'merchantOrderId' => $order->code,
+            ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                Log::info('Duitku API Status Check:', ['code' => $order->code, 'result' => $result]);
+
+                // Duitku status code '00' = paid successfully
+                $statusCode = $result['statusCode'] ?? $result['resultCode'] ?? null;
+                if ($statusCode === '00') {
+                    return true;
+                }
+            } else {
+                Log::warning('Duitku API Status Check Failed', [
+                    'code' => $order->code,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Duitku Status Check Exception: ' . $e->getMessage(), ['code' => $order->code]);
+        }
+
+        return false;
+    }
+
+    /**
      * Generate payment for the order (Integrate Duitku Create Invoice API).
      *
      * @return bool true if payment was generated successfully, false otherwise
@@ -118,23 +210,12 @@ class PaymentService
         $merchantOrderId = $request->input('merchantOrderId');
         $resultCode = $request->input('resultCode');
 
+        Log::info('Duitku Webhook Processing:', ['merchantOrderId' => $merchantOrderId, 'resultCode' => $resultCode]);
+
         $order = Order::where('code', $merchantOrderId)->firstOrFail();
 
-        if ($order->status === 'paid') {
-            return;
-        }
-
         if ($resultCode === '00') {
-            DB::transaction(function () use ($order) {
-                $order->update(['status' => 'paid']);
-
-                foreach ($order->orderItems as $orderItem) {
-                    $item = $orderItem->item;
-                    if ($item) {
-                        $item->decrement('stock', $orderItem->quantity);
-                    }
-                }
-            });
+            $this->processPaymentSuccess($order);
         } elseif ($resultCode === '02') {
             $order->update(['status' => 'failed']);
         }
