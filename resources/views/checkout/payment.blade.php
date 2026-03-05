@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Pembayaran QRIS')
+@section('title', 'Pembayaran')
 
 @section('content')
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
             <!-- Header -->
             <div class="bg-primary px-6 py-4 text-center">
-                <h1 class="text-white font-bold text-lg">Pembayaran QRIS</h1>
-                <p class="text-white/80 text-sm mt-1">Scan QR Code di bawah untuk membayar</p>
+                <h1 class="text-white font-bold text-lg">Pembayaran Pesanan</h1>
+                <p class="text-white/80 text-sm mt-1">Selesaikan pembayaran untuk melanjutkan pesanan</p>
             </div>
 
             <div class="p-6 text-center space-y-6">
