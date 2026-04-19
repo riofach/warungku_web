@@ -52,11 +52,13 @@
                                 <span class="font-medium" :class="{'text-blue-700': deliveryType === 'delivery'}">Diantar</span>
                             </label>
                             
-                            <label class="relative flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-blue-500 transition-colors"
-                                :class="{'border-blue-500 bg-blue-50': deliveryType === 'pickup', 'border-gray-200': deliveryType !== 'pickup'}">
-                                <input type="radio" name="delivery_type" value="pickup" class="sr-only" x-model="deliveryType">
-                                <span class="font-medium" :class="{'text-blue-700': deliveryType === 'pickup'}">Ambil Sendiri</span>
-                            </label>
+                            <div class="relative flex items-center justify-center p-4 border border-gray-200 rounded-lg bg-gray-50 opacity-60 cursor-not-allowed select-none">
+                                <input type="radio" name="delivery_type" value="pickup" class="sr-only" disabled>
+                                <div class="flex flex-col items-center gap-1">
+                                    <span class="font-medium text-gray-400">Ambil Sendiri</span>
+                                    <span class="text-xs font-semibold bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Segera Hadir</span>
+                                </div>
+                            </div>
                         </div>
                         @error('delivery_type')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -192,17 +194,16 @@
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                             
-                            <span x-text="isSubmitting ? 'Memproses...' : 'Buat Pesanan'"></span>
+                            <span x-text="isSubmitting ? 'Memproses...' : 'Buat Pesanan'">Buat Pesanan</span>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
     </form>
-</div>
 
-<!-- Mobile Sticky Bottom Bar -->
-<div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden z-40 safe-area-inset-bottom">
+    <!-- Mobile Sticky Bottom Bar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden z-40 safe-area-inset-bottom">
     <div class="flex items-center justify-between gap-4">
         <div>
             <p class="text-xs text-gray-500">Total Bayar</p>
@@ -219,9 +220,10 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             
-            <span x-text="isSubmitting ? 'Memproses...' : 'Buat Pesanan'"></span>
+            <span x-text="isSubmitting ? 'Memproses...' : 'Buat Pesanan'">Buat Pesanan</span>
         </button>
     </div>
+</div>
 </div>
 
 @endsection
@@ -230,7 +232,7 @@
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('checkoutForm', () => ({
-            deliveryType: @json(old('delivery_type', 'delivery')),
+            deliveryType: @json(old('delivery_type', 'delivery') === 'pickup' ? 'delivery' : old('delivery_type', 'delivery')),
             paymentMethod: @json(old('payment_method', '')),
             isSubmitting: false,
             
