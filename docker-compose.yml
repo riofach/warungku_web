@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      APP_NAME: WarungKu
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: false
+      APP_URL: ${APP_URL}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: error
+      DB_CONNECTION: pgsql
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-postgres}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SESSION_DRIVER: file
+      SESSION_LIFETIME: 120
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+      FILESYSTEM_DISK: local
+      DUITKU_MERCHANT_CODE: ${DUITKU_MERCHANT_CODE}
+      DUITKU_API_KEY: ${DUITKU_API_KEY}
+      DUITKU_SANDBOX_MODE: ${DUITKU_SANDBOX_MODE:-false}
+      PAYMENT_CALLBACK_URL: ${PAYMENT_CALLBACK_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+    volumes:
+      - storage_uploads:/var/www/html/storage/app/public
+    restart: unless-stopped
+
+volumes:
+  storage_uploads:
