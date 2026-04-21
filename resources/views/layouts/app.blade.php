@@ -20,7 +20,54 @@
     
     @stack('styles')
 </head>
+@php
+    $warungIsOpen = \App\Models\Setting::isWarungOpen();
+    $operatingOpen  = \App\Models\Setting::getValue(\App\Models\Setting::KEY_OPERATING_HOURS_OPEN, '08:00');
+    $operatingClose = \App\Models\Setting::getValue(\App\Models\Setting::KEY_OPERATING_HOURS_CLOSE, '21:00');
+@endphp
 <body class="bg-background text-text-primary font-sans min-h-screen flex flex-col" x-data x-init="$store.cart.count = {{ $cartCount ?? 0 }}">
+
+@if(!$warungIsOpen)
+{{-- Fullscreen closed overlay --}}
+<div class="fixed inset-0 z-[500] flex items-center justify-center p-4"
+     style="background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
+        {{-- Icon tutup --}}
+        <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+
+        {{-- Nama warung --}}
+        <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Warung Luthfan</p>
+
+        {{-- Pesan utama --}}
+        <h2 class="text-2xl font-bold text-gray-900 mb-3">Saat Ini Sedang Tutup</h2>
+
+        {{-- Info jam --}}
+        <p class="text-gray-500 text-sm mb-5">
+            Kami beroperasi setiap hari pada jam:
+        </p>
+        <div class="inline-flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-6 py-3 mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="text-lg font-bold text-gray-800 tracking-wide">{{ $operatingOpen }} – {{ $operatingClose }} WIB</span>
+        </div>
+
+        {{-- Lacak pesanan tetap bisa --}}
+        <p class="text-gray-400 text-xs mb-4">Sudah punya pesanan?</p>
+        <a href="{{ route('tracking.index') }}"
+           class="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            Lacak Pesanan Saya
+        </a>
+    </div>
+</div>
+@endif
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-surface shadow-sm border-b border-border">
         <div class="container mx-auto px-4">
