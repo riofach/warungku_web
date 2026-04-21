@@ -274,14 +274,14 @@
         </div>
 
         {{-- Lacak pesanan tetap bisa --}}
-        <p class="text-gray-400 text-xs mb-3">Sudah punya pesanan?</p>
+        {{-- <p class="text-gray-400 text-xs mb-3">Sudah punya pesanan?</p>
         <a href="{{ route('tracking.index') }}"
            class="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
             Lacak Pesanan Saya
-        </a>
+        </a> --}}
     </div>
 </div>
 @endif
