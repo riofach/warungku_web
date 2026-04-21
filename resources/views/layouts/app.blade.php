@@ -6,18 +6,18 @@
     <meta name="description" content="WarungKu - Belanja mudah dari warung tetangga">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'WarungKu') - Belanja Mudah</title>
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('logo-warung.png') }}">
-    
+
     <!-- Inter Font from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Vite Assets -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
+
     @stack('styles')
 </head>
 @php
@@ -27,47 +27,12 @@
 @endphp
 <body class="bg-background text-text-primary font-sans min-h-screen flex flex-col" x-data x-init="$store.cart.count = {{ $cartCount ?? 0 }}">
 
-@if(!$warungIsOpen)
-{{-- Fullscreen closed overlay --}}
-<div class="fixed inset-0 z-[500] flex items-center justify-center p-4"
-     style="background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
-        {{-- Icon tutup --}}
-        <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </div>
+{{-- ═══════════════════════════════════════════════
+     Seluruh konten halaman — diblur saat tutup
+     ═══════════════════════════════════════════════ --}}
+<div class="contents {{ !$warungIsOpen ? 'pointer-events-none select-none' : '' }}"
+     @if(!$warungIsOpen) style="filter: blur(4px);" @endif>
 
-        {{-- Nama warung --}}
-        <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Warung Luthfan</p>
-
-        {{-- Pesan utama --}}
-        <h2 class="text-2xl font-bold text-gray-900 mb-3">Saat Ini Sedang Tutup</h2>
-
-        {{-- Info jam --}}
-        <p class="text-gray-500 text-sm mb-5">
-            Kami beroperasi setiap hari pada jam:
-        </p>
-        <div class="inline-flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-6 py-3 mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <span class="text-lg font-bold text-gray-800 tracking-wide">{{ $operatingOpen }} – {{ $operatingClose }} WIB</span>
-        </div>
-
-        {{-- Lacak pesanan tetap bisa --}}
-        <p class="text-gray-400 text-xs mb-4">Sudah punya pesanan?</p>
-        <a href="{{ route('tracking.index') }}"
-           class="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-            </svg>
-            Lacak Pesanan Saya
-        </a>
-    </div>
-</div>
-@endif
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-surface shadow-sm border-b border-border">
         <div class="container mx-auto px-4">
@@ -80,7 +45,7 @@
                     <div class="flex flex-col">
                         <span class="text-xl font-bold text-primary tracking-tight leading-none">WarungLuthfan</span>
                         <!-- Jam WIB -->
-                        <div x-data="{ time: '' }" x-init="time = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB'; setInterval(() => { 
+                        <div x-data="{ time: '' }" x-init="time = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB'; setInterval(() => {
                             time = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
                         }, 1000)" class="text-xs text-text-secondary font-medium">
                             <span x-text="time"></span>
@@ -98,9 +63,9 @@
                     @endif
 
                     <div class="relative w-full">
-                        <input 
-                            type="text" 
-                            name="search" 
+                        <input
+                            type="text"
+                            name="search"
                             placeholder="Cari produk..."
                             value="{{ request('search') }}"
                             class="input-field !pl-14 pr-4 py-2.5"
@@ -118,7 +83,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <!-- Cart Badge -->
-                    <span 
+                    <span
                         x-show="$store.cart.count > 0"
                         x-text="$store.cart.count"
                         class="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
@@ -137,9 +102,9 @@
                         <input type="hidden" name="category" value="{{ request('category') }}">
                     @endif
                     <div class="relative">
-                        <input 
-                            type="text" 
-                            name="search" 
+                        <input
+                            type="text"
+                            name="search"
                             placeholder="Cari produk..."
                             value="{{ request('search') }}"
                             class="input-field !pl-12 pr-4 py-2.5 text-sm"
@@ -182,7 +147,7 @@
         @yield('content')
 
         <!-- Toast Notification -->
-        <div 
+        <div
             x-data="{ show: false, message: '', type: 'success' }"
             x-show="show"
             x-transition:enter="transition ease-out duration-300"
@@ -214,7 +179,6 @@
         <div class="grid grid-cols-3 gap-1 p-2">
             <a href="{{ route('home') }}" class="flex flex-col items-center py-2 px-4 rounded-lg {{ request()->routeIs('home') ? 'text-primary bg-primary/10' : 'text-text-secondary hover:bg-background' }}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
                 <span class="text-xs mt-1 font-medium">Beranda</span>
@@ -224,7 +188,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
                 <span class="text-xs mt-1 font-medium">Keranjang</span>
-                <span 
+                <span
                     x-show="$store.cart.count > 0"
                     x-text="$store.cart.count"
                     class="absolute top-1 right-1/4 bg-primary text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center"
@@ -275,6 +239,52 @@
         <span class="text-sm font-semibold">Chat Admin</span>
     </a>
     @endif
+
+</div>{{-- end page content wrapper --}}
+
+{{-- ═══════════════════════════════════════════════
+     Closed overlay — di luar wrapper blur,
+     sehingga card tetap tajam & bisa diklik
+     ═══════════════════════════════════════════════ --}}
+@if(!$warungIsOpen)
+<div class="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
+        {{-- Icon tutup --}}
+        <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+
+        {{-- Nama warung --}}
+        <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Warung Luthfan</p>
+
+        {{-- Pesan utama --}}
+        <h2 class="text-2xl font-bold text-gray-900 mb-3">Saat Ini Sedang Tutup</h2>
+
+        {{-- Info jam --}}
+        <p class="text-gray-500 text-sm mb-4">
+            Kami beroperasi setiap hari pada jam:
+        </p>
+        <div class="inline-flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-6 py-3 mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="text-lg font-bold text-gray-800 tracking-wide">{{ $operatingOpen }} – {{ $operatingClose }} WIB</span>
+        </div>
+
+        {{-- Lacak pesanan tetap bisa --}}
+        <p class="text-gray-400 text-xs mb-3">Sudah punya pesanan?</p>
+        <a href="{{ route('tracking.index') }}"
+           class="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            Lacak Pesanan Saya
+        </a>
+    </div>
+</div>
+@endif
 
     @stack('scripts')
 </body>
