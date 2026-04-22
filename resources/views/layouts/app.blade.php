@@ -25,12 +25,17 @@
     $operatingOpen  = \App\Models\Setting::getValue(\App\Models\Setting::KEY_OPERATING_HOURS_OPEN, '08:00');
     $operatingClose = \App\Models\Setting::getValue(\App\Models\Setting::KEY_OPERATING_HOURS_CLOSE, '21:00');
 @endphp
-<body class="bg-background text-text-primary font-sans min-h-screen flex flex-col" x-data x-init="$store.cart.count = {{ $cartCount ?? 0 }}">
+<body class="bg-slate-500 text-text-primary font-sans min-h-screen" x-data x-init="$store.cart.count = {{ $cartCount ?? 0 }}">
+
+{{-- ═══════════════════════════════════════════════
+     Mobile-first wrapper — centered phone layout
+     ═══════════════════════════════════════════════ --}}
+<div class="max-w-md mx-auto bg-surface min-h-screen flex flex-col shadow-2xl ring-1 ring-black/10">
 
 {{-- ═══════════════════════════════════════════════
      Seluruh konten halaman — diblur saat tutup
      ═══════════════════════════════════════════════ --}}
-<div class="contents {{ !$warungIsOpen ? 'pointer-events-none select-none' : '' }}"
+<div class="flex flex-col flex-1 {{ !$warungIsOpen ? 'pointer-events-none select-none' : '' }}"
      @if(!$warungIsOpen) style="filter: blur(4px);" @endif>
 
     <!-- Header -->
@@ -53,29 +58,6 @@
                     </div>
                 </a>
 
-                <!-- Search (Desktop) -->
-                <form action="{{ route('home') }}" method="GET" class="hidden md:flex flex-1 max-w-md mx-8">
-                    @if(request('category_id'))
-                        <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-                    @endif
-                    @if(request('category'))
-                        <input type="hidden" name="category" value="{{ request('category') }}">
-                    @endif
-
-                    <div class="relative w-full">
-                        <input
-                            type="text"
-                            name="search"
-                            placeholder="Cari produk..."
-                            value="{{ request('search') }}"
-                            class="input-field !pl-14 pr-4 py-2.5"
-                            @input.debounce.500ms="$el.form.submit()"
-                        >
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
-                </form>
 
                 <!-- Cart -->
                 <a href="{{ route('cart.index') }}" class="relative p-2 hover:bg-background rounded-lg transition-colors">
@@ -92,8 +74,8 @@
                 </a>
             </div>
 
-            <!-- Search (Mobile) -->
-            <div class="md:hidden pb-3">
+            <!-- Search Bar -->
+            <div class="pb-3">
                 <form action="{{ route('home') }}" method="GET">
                     @if(request('category_id'))
                         <input type="hidden" name="category_id" value="{{ request('category_id') }}">
@@ -174,8 +156,8 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation (Mobile) -->
-    <nav class="md:hidden sticky bottom-0 bg-surface border-t border-border safe-area-inset-bottom">
+    <!-- Bottom Navigation -->
+    <nav class="sticky bottom-0 bg-surface border-t border-border safe-area-inset-bottom">
         <div class="grid grid-cols-3 gap-1 p-2">
             <a href="{{ route('home') }}" class="flex flex-col items-center py-2 px-4 rounded-lg {{ request()->routeIs('home') ? 'text-primary bg-primary/10' : 'text-text-secondary hover:bg-background' }}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,8 +186,8 @@
         </div>
     </nav>
 
-    <!-- Footer (Desktop) -->
-    <footer class="hidden md:block bg-surface border-t border-border mt-8">
+    <!-- Footer (hidden - replaced by bottom nav) -->
+    <footer class="hidden">
         <div class="container mx-auto px-4 py-6">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-2">
@@ -230,21 +212,21 @@
     <a href="https://wa.me/{{ $waNumberFloat }}?text={{ urlencode('Halo Admin, saya ingin menanyakan pesanan saya.') }}"
         target="_blank"
         title="Chat Admin via WhatsApp"
-        style="position:fixed; bottom:5rem; right:1rem; z-index:60;"
-        class="flex items-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#1ebe5a] hover:shadow-xl transition-all duration-200">
+        style="position:fixed; bottom:5rem; right: max(1rem, calc((100vw - 28rem) / 2 + 1rem)); z-index:60;"
+        class="flex items-center justify-center bg-[#25D366] text-white w-12 h-12 rounded-full shadow-lg hover:bg-[#1ebe5a] hover:shadow-xl transition-all duration-200">
         <svg class="w-6 h-6 shrink-0" fill="currentColor" viewBox="0 0 24 24">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
             <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.562 4.12 1.536 5.854L.057 23.882a.5.5 0 00.611.611l6.028-1.478A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.94 9.94 0 01-5.13-1.422l-.37-.22-3.528.865.882-3.53-.243-.385A10 10 0 1112 22z"/>
         </svg>
-        <span class="text-sm font-semibold">Chat Admin</span>
     </a>
     @endif
 
-</div>{{-- end page content wrapper --}}
+</div>{{-- end blur wrapper --}}
+
+</div>{{-- end mobile-first max-w-md wrapper --}}
 
 {{-- ═══════════════════════════════════════════════
-     Closed overlay — di luar wrapper blur,
-     sehingga card tetap tajam & bisa diklik
+     Closed overlay — fixed, covers full viewport
      ═══════════════════════════════════════════════ --}}
 @if(!$warungIsOpen)
 <div class="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/50">

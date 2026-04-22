@@ -32,9 +32,9 @@
             </a>
         </div>
     @else
-        <div class="grid md:grid-cols-3 gap-6" x-show="cartItems.length > 0">
+        <div class="flex flex-col gap-6" x-show="cartItems.length > 0">
             <!-- Cart Items -->
-            <div class="md:col-span-2 space-y-4">
+            <div class="space-y-4">
                 <template x-for="(item, index) in cartItems" :key="item.id">
                     <div class="card flex gap-4 transition-all duration-300" :id="'item-' + item.id">
                         <!-- Image -->
@@ -95,7 +95,7 @@
                         </div>
 
                         <!-- Subtotal -->
-                        <div class="text-right hidden sm:block">
+                        <div class="text-right">
                             <span class="font-bold text-lg" x-text="formatRupiah(item.price * item.quantity)"></span>
                         </div>
                     </div>

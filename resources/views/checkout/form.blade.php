@@ -3,13 +3,13 @@
 @section('title', 'Checkout')
 
 @section('content')
-<div class="container mx-auto px-4 py-6 pb-24 md:pb-6" x-data="checkoutForm()">
+<div class="container mx-auto px-4 py-6" x-data="checkoutForm()">
     <h1 class="text-2xl font-bold mb-6">Checkout</h1>
 
     <form action="{{ route('checkout.store') }}" method="POST" id="checkout-form" @submit="handleSubmit">
         @csrf
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="flex flex-col gap-6">
             <!-- Left Column: Form -->
             <div class="space-y-6">
                 
@@ -181,8 +181,8 @@
                         </div>
                     </div>
                     
-                    <!-- Desktop Button -->
-                    <div class="hidden md:block mt-6">
+                    <!-- Submit Button -->
+                    <div class="mt-6">
                          <button type="submit" form="checkout-form"
                             class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             :disabled="isSubmitting || !isValid()"
@@ -202,8 +202,8 @@
         </div>
     </form>
 
-    <!-- Mobile Sticky Bottom Bar -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden z-40 safe-area-inset-bottom">
+    <!-- Mobile Sticky Bottom Bar (hidden - button moved into form) -->
+    <div class="hidden">
     <div class="flex items-center justify-between gap-4">
         <div>
             <p class="text-xs text-gray-500">Total Bayar</p>
