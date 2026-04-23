@@ -81,9 +81,6 @@ class CheckoutTest extends TestCase
 
     public function test_checkout_qris_success()
     {
-        // Setup Housing Block
-        $block = \App\Models\HousingBlock::create(['name' => 'Blok A']);
-
         // Setup Item
         $category = Category::create(['name' => 'Drink']);
         $item = Item::create([
@@ -113,7 +110,8 @@ class CheckoutTest extends TestCase
             'customer_name' => 'Siti',
             'delivery_type' => 'delivery',
             'payment_method' => 'qris',
-            'housing_block_id' => $block->id
+            'block_number' => '14',
+            'house_number' => '08',
         ]);
 
         // Assert
@@ -121,6 +119,7 @@ class CheckoutTest extends TestCase
         $this->assertNotNull($order, 'Order was not created');
         $this->assertEquals('Siti', $order->customer_name);
         $this->assertEquals('qris', $order->payment_method);
+        $this->assertEquals('U14/08', $order->block_address);
         
         // Redirect to Payment Page
         $response->assertRedirect(route('payment.show', ['code' => $order->code]));

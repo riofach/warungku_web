@@ -67,9 +67,15 @@ class CheckoutService
             $code = $this->orderService->generateUniqueCode();
 
             // 2. Create Order Record
+            // Assemble block_address from split inputs (e.g. U14/08)
+            $blockAddress = null;
+            if (!empty($data['block_number']) && !empty($data['house_number'])) {
+                $blockAddress = 'U' . $data['block_number'] . '/' . $data['house_number'];
+            }
+
             $order = Order::create([
                 'code' => $code,
-                'housing_block_id' => $data['housing_block_id'] ?? null,
+                'block_address' => $blockAddress,
                 'customer_name' => $data['customer_name'],
                 'whatsapp_number' => $data['whatsapp_number'],
                 'payment_method' => $data['payment_method'],

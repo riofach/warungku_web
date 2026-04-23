@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\HousingBlock;
 use App\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,10 +12,9 @@ class PaymentControllerTest extends TestCase
 
     public function test_show_payment_page_generates_payment_if_missing(): void
     {
-        $housingBlock = HousingBlock::create(['name' => 'Blok A']);
         $order = Order::create([
             'code' => 'WRG-TEST-001',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Somay',
             'payment_method' => 'qris',
             'delivery_type' => 'delivery',
@@ -36,10 +34,9 @@ class PaymentControllerTest extends TestCase
 
     public function test_show_payment_redirects_if_not_pending(): void
     {
-        $housingBlock = HousingBlock::create(['name' => 'Blok A']);
         $order = Order::create([
             'code' => 'WRG-TEST-002',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Somay',
             'payment_method' => 'qris',
             'delivery_type' => 'delivery',
@@ -54,10 +51,9 @@ class PaymentControllerTest extends TestCase
     
     public function test_check_status_returns_json(): void
     {
-        $housingBlock = HousingBlock::create(['name' => 'Blok A']);
         $order = Order::create([
             'code' => 'WRG-TEST-003',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Somay',
             'payment_method' => 'qris',
             'delivery_type' => 'delivery',

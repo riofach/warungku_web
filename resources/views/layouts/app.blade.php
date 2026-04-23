@@ -144,20 +144,20 @@
                 show = true;
                 setTimeout(() => show = false, 3000);
             "
-            class="fixed top-20 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]"
+            class="fixed top-20 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3"
             :class="{
                 'bg-success text-white': type === 'success',
                 'bg-error text-white': type === 'error',
                 'bg-warning text-white': type === 'warning'
             }"
-            style="display: none;"
+            style="left: max(1rem, calc((100vw - 28rem) / 2 + 1rem)); right: max(1rem, calc((100vw - 28rem) / 2 + 1rem)); display: none;"
         >
             <span x-text="message" class="font-medium"></span>
         </div>
     </main>
 
     <!-- Bottom Navigation -->
-    <nav class="sticky bottom-0 bg-surface border-t border-border safe-area-inset-bottom">
+    <nav class="sticky bottom-0 z-20 bg-surface border-t border-border safe-area-inset-bottom">
         <div class="grid grid-cols-3 gap-1 p-2">
             <a href="{{ route('home') }}" class="flex flex-col items-center py-2 px-4 rounded-lg {{ request()->routeIs('home') ? 'text-primary bg-primary/10' : 'text-text-secondary hover:bg-background' }}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

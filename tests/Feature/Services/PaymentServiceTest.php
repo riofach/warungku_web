@@ -3,7 +3,6 @@
 namespace Tests\Feature\Services;
 
 use App\Models\Category;
-use App\Models\HousingBlock;
 use App\Models\Item;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -29,11 +28,9 @@ class PaymentServiceTest extends TestCase
      */
     public function test_generate_payment_populates_order_fields(): void
     {
-        $housingBlock = HousingBlock::create(['name' => 'Blok A']);
-        
         $order = Order::create([
             'code' => 'WRG-20260209-0001',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Somay',
             'payment_method' => 'qris',
             'delivery_type' => 'delivery',
@@ -72,13 +69,12 @@ class PaymentServiceTest extends TestCase
     public function test_handle_webhook_success_reduces_stock_and_updates_status(): void
     {
         // Arrange
-        $housingBlock = HousingBlock::create(['name' => 'Blok B']);
         $category = Category::factory()->create();
         $item = Item::factory()->create(['category_id' => $category->id, 'stock' => 10]);
 
         $order = Order::create([
             'code' => 'WRG-20260209-0002',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Budi',
             'payment_method' => 'qris',
             'delivery_type' => 'pickup',
@@ -112,13 +108,12 @@ class PaymentServiceTest extends TestCase
     public function test_handle_webhook_failed_updates_status_only(): void
     {
         // Arrange
-        $housingBlock = HousingBlock::create(['name' => 'Blok C']);
         $category = Category::factory()->create();
         $item = Item::factory()->create(['category_id' => $category->id, 'stock' => 10]);
 
         $order = Order::create([
             'code' => 'WRG-20260209-0003',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Cici',
             'payment_method' => 'qris',
             'delivery_type' => 'delivery',
@@ -151,7 +146,6 @@ class PaymentServiceTest extends TestCase
     public function test_handle_webhook_idempotency_does_not_reduce_stock_twice(): void
     {
         // Arrange
-        $housingBlock = HousingBlock::create(['name' => 'Blok D']);
         $category = Category::factory()->create();
         // Initial stock 8, meaning 2 already deducted from original 10?
         // Let's say stock is currently 8.
@@ -159,7 +153,7 @@ class PaymentServiceTest extends TestCase
 
         $order = Order::create([
             'code' => 'WRG-20260209-0004',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Dodi',
             'payment_method' => 'qris',
             'delivery_type' => 'pickup',

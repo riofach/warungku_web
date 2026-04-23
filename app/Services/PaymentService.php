@@ -133,7 +133,7 @@ class PaymentService
             'customerVaName' => $order->customer_name,
             'customerDetail' => [
                 'firstName' => $order->customer_name,
-                'lastName' => $order->housingBlock ? $order->housingBlock->name : '',
+                'lastName' => $order->block_address ?? '',
                 'email' => $email,
                 'phoneNumber' => $phoneNumber,
             ],

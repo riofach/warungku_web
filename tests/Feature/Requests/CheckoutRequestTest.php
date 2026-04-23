@@ -3,7 +3,6 @@
 namespace Tests\Feature\Requests;
 
 use App\Http\Requests\CheckoutRequest;
-use App\Models\HousingBlock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
@@ -14,11 +13,10 @@ class CheckoutRequestTest extends TestCase
 
     public function test_validation_passes_for_valid_delivery_order()
     {
-        $block = HousingBlock::create(['name' => 'Block A']);
-
         $data = [
             'customer_name' => 'John Doe',
-            'housing_block_id' => $block->id,
+            'block_number' => '14',
+            'house_number' => '08',
             'delivery_type' => 'delivery',
             'payment_method' => 'qris',
         ];
@@ -69,13 +67,14 @@ class CheckoutRequestTest extends TestCase
         $this->assertArrayHasKey('customer_name', $validator->errors()->toArray());
     }
 
-    public function test_validation_fails_if_delivery_requires_housing_block()
+    public function test_validation_fails_if_delivery_requires_block_number()
     {
         $data = [
             'customer_name' => 'John Doe',
             'delivery_type' => 'delivery',
             'payment_method' => 'qris',
-            // 'housing_block_id' => 'some-uuid', // Missing
+            // 'block_number' => '14', // Missing
+            // 'house_number' => '08', // Missing
         ];
 
         $request = new CheckoutRequest();
@@ -84,16 +83,15 @@ class CheckoutRequestTest extends TestCase
         $validator = Validator::make($data, $request->rules());
 
         $this->assertFalse($validator->passes());
-        $this->assertArrayHasKey('housing_block_id', $validator->errors()->toArray());
+        $this->assertArrayHasKey('block_number', $validator->errors()->toArray());
     }
 
     public function test_validation_fails_if_delivery_uses_cash()
     {
-        $block = HousingBlock::create(['name' => 'Block A']);
-        
         $data = [
             'customer_name' => 'John Doe',
-            'housing_block_id' => $block->id,
+            'block_number' => '14',
+            'house_number' => '08',
             'delivery_type' => 'delivery',
             'payment_method' => 'tunai', // Invalid
         ];

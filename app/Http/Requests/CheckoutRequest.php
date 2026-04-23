@@ -24,7 +24,7 @@ class CheckoutRequest extends FormRequest
     {
         return [
             'customer_name' => ['required', 'string', 'max:255'],
-            'whatsapp_number' => ['required', 'string', 'max:20', 'regex:/^08[0-9]{8,13}$/'],
+            'whatsapp_number' => ['required', 'string', 'min:10', 'max:15', 'regex:/^\d{10,15}$/'],
             'delivery_type' => ['required', Rule::in(['delivery', 'pickup'])],
             'payment_method' => [
                 'required', 
@@ -38,11 +38,19 @@ class CheckoutRequest extends FormRequest
                     }
                 },
             ],
-            'housing_block_id' => [
-                'nullable', 
-                'uuid', 
-                'exists:housing_blocks,id',
+            'block_number' => [
                 Rule::requiredIf(fn () => $this->delivery_type === 'delivery'),
+                'nullable',
+                'string',
+                'regex:/^\d+$/',
+                'max:2',
+            ],
+            'house_number' => [
+                Rule::requiredIf(fn () => $this->delivery_type === 'delivery'),
+                'nullable',
+                'string',
+                'regex:/^\d+$/',
+                'max:2',
             ],
         ];
     }
@@ -57,8 +65,13 @@ class CheckoutRequest extends FormRequest
         return [
             'customer_name.required' => 'Nama lengkap wajib diisi.',
             'whatsapp_number.required' => 'Nomor WhatsApp wajib diisi.',
-            'whatsapp_number.regex' => 'Format nomor WhatsApp tidak valid (contoh: 08123456789).',
-            'housing_block_id.required' => 'Lokasi (Blok) wajib dipilih untuk pesan antar.',
+            'whatsapp_number.min' => 'Nomor WhatsApp minimal 10 angka.',
+            'whatsapp_number.max' => 'Nomor WhatsApp maksimal 15 angka.',
+            'whatsapp_number.regex' => 'Nomor WhatsApp hanya boleh berisi angka (10-15 digit).',
+            'block_number.required' => 'Nomor blok wajib diisi untuk pesan antar.',
+            'block_number.regex' => 'Nomor blok hanya boleh berisi angka.',
+            'house_number.required' => 'Nomor rumah wajib diisi untuk pesan antar.',
+            'house_number.regex' => 'Nomor rumah hanya boleh berisi angka.',
             'payment_method.required' => 'Metode pembayaran wajib dipilih.',
             'delivery_type.required' => 'Metode pengambilan wajib dipilih.',
         ];

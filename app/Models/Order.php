@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
@@ -16,7 +15,7 @@ class Order extends Model
 
     protected $fillable = [
         'code',
-        'housing_block_id',
+        'block_address',
         'customer_name',
         'whatsapp_number',
         'payment_method',
@@ -50,14 +49,6 @@ class Order extends Model
     // Delivery types
     const DELIVERY_TYPE_DELIVERY = 'delivery';
     const DELIVERY_TYPE_PICKUP = 'pickup';
-
-    /**
-     * Get the housing block
-     */
-    public function housingBlock(): BelongsTo
-    {
-        return $this->belongsTo(HousingBlock::class);
-    }
 
     /**
      * Get order items

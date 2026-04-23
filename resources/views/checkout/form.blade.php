@@ -34,8 +34,10 @@
                         <label for="whatsapp_number" class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp</label>
                         <input type="tel" name="whatsapp_number" id="whatsapp_number" required
                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value="{{ old('whatsapp_number') }}"
-                            placeholder="Contoh: 08123456789">
+                            x-model="whatsappNumber"
+                            placeholder="Contoh: 08123456789"
+                            minlength="10"
+                            maxlength="15">
                         <p class="text-xs text-gray-500 mt-1">Nomor ini akan digunakan untuk konfirmasi pesanan.</p>
                         @error('whatsapp_number')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -67,18 +69,32 @@
 
                     <!-- Location (Block) - Only if delivery -->
                     <div class="mb-4" x-show="deliveryType === 'delivery'" x-transition>
-                        <label for="housing_block_id" class="block text-sm font-medium text-gray-700 mb-1">Lokasi (Blok)</label>
-                        <select name="housing_block_id" id="housing_block_id" 
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            :required="deliveryType === 'delivery'">
-                            <option value="">Pilih Blok Rumah</option>
-                            @foreach($housingBlocks as $block)
-                                <option value="{{ $block->id }}" {{ old('housing_block_id') == $block->id ? 'selected' : '' }}>
-                                    {{ $block->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('housing_block_id')
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lokasi (Blok Rumah)</label>
+                        <div class="flex items-center gap-2">
+                            <!-- Prefix U - static -->
+                            <span class="flex items-center justify-center px-3 py-2 bg-gray-100 border border-gray-300 rounded-md font-bold text-gray-700 text-base select-none">U</span>
+                            <!-- Block number input -->
+                            <input type="text" name="block_number" id="block_number" inputmode="numeric" pattern="\d*"
+                                class="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-center"
+                                x-model="blockNumber"
+                                placeholder="14"
+                                maxlength="2"
+                                :required="deliveryType === 'delivery'">
+                            <!-- Separator -->
+                            <span class="font-bold text-gray-700 text-lg select-none">/</span>
+                            <!-- House number input -->
+                            <input type="text" name="house_number" id="house_number" inputmode="numeric" pattern="\d*"
+                                class="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-center"
+                                x-model="houseNumber"
+                                placeholder="08"
+                                maxlength="2"
+                                :required="deliveryType === 'delivery'">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Contoh: blok <strong>14</strong>, nomor rumah <strong>08</strong> → menjadi <strong>U14/08</strong></p>
+                        @error('block_number')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                        @error('house_number')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
@@ -234,6 +250,9 @@
         Alpine.data('checkoutForm', () => ({
             deliveryType: @json(old('delivery_type', 'delivery') === 'pickup' ? 'delivery' : old('delivery_type', 'delivery')),
             paymentMethod: @json(old('payment_method', '')),
+            blockNumber: @json(old('block_number', '')),
+            houseNumber: @json(old('house_number', '')),
+            whatsappNumber: @json(old('whatsapp_number', '')),
             isSubmitting: false,
             
             init() {
@@ -256,11 +275,19 @@
             
             isValid() {
                 // Basic client side check
+                const wa = this.whatsappNumber.trim();
+                const validPhone = /^\d{10,15}$/.test(wa);
+
                 if (this.deliveryType === 'delivery') {
-                    return this.paymentMethod === 'qris';
+                    const blockNum = this.blockNumber.trim();
+                    const houseNum = this.houseNumber.trim();
+                    return validPhone
+                        && this.paymentMethod === 'qris'
+                        && /^\d{1,2}$/.test(blockNum)
+                        && /^\d{1,2}$/.test(houseNum);
                 }
                 if (this.deliveryType === 'pickup') {
-                    return this.paymentMethod === 'tunai';
+                    return validPhone && this.paymentMethod === 'tunai';
                 }
                 return false;
             },

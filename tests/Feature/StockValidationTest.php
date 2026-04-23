@@ -41,7 +41,6 @@ class StockValidationTest extends TestCase
         // 4. Submit checkout form
         $response = $this->post(route('checkout.store'), [
             'customer_name' => 'Test User',
-            'housing_block_id' => null,
             'delivery_type' => 'pickup',
             'payment_method' => 'tunai',
         ]);
@@ -72,7 +71,6 @@ class StockValidationTest extends TestCase
         // 3. Submit checkout form
         $response = $this->post(route('checkout.store'), [
             'customer_name' => 'Test User',
-            'housing_block_id' => null,
             'delivery_type' => 'pickup',
             'payment_method' => 'tunai',
         ]);

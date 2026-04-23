@@ -46,7 +46,7 @@ class TrackingController extends Controller
     public function show(string $code)
     {
         $order = Order::where('code', $code)
-            ->with(['orderItems.item', 'housingBlock'])
+            ->with(['orderItems.item'])
             ->firstOrFail();
 
         $terminalStatuses = ['completed', 'cancelled', 'failed'];
@@ -83,7 +83,7 @@ class TrackingController extends Controller
     public function downloadInvoice(string $code)
     {
         $order = Order::where('code', $code)
-            ->with(['orderItems.item', 'housingBlock'])
+            ->with(['orderItems.item'])
             ->first();
 
         if (!$order) {

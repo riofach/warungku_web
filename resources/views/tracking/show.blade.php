@@ -260,8 +260,8 @@
                     <p class="font-medium">
                         @if ($order->delivery_type === 'delivery')
                             🚚 Antar
-                            @if ($order->housingBlock)
-                                <span class="text-text-secondary">({{ $order->housingBlock->name }})</span>
+                            @if ($order->block_address)
+                                <span class="text-text-secondary">({{ $order->block_address }})</span>
                             @endif
                         @else
                             🏪 Ambil Sendiri

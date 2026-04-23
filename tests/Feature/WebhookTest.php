@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\HousingBlock;
 use App\Models\Item;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -62,12 +61,11 @@ class WebhookTest extends TestCase
     public function test_webhook_processes_valid_payment_success(): void
     {
         // Arrange
-        $housingBlock = HousingBlock::create(['name' => 'Blok A']);
         $item = Item::factory()->create(['stock' => 10]);
         
         $order = Order::create([
             'code' => 'WRG-20260209-0010',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Tester',
             'payment_method' => 'qris',
             'delivery_type' => 'pickup',
@@ -106,11 +104,10 @@ class WebhookTest extends TestCase
     public function test_webhook_handles_payment_failure(): void
     {
         // Arrange
-        $housingBlock = HousingBlock::create(['name' => 'Blok F']);
         $item = Item::factory()->create(['stock' => 10]);
         $order = Order::create([
             'code' => 'WRG-20260209-0013',
-            'housing_block_id' => $housingBlock->id,
+            'block_address' => 'U1/01',
             'customer_name' => 'Fail',
             'payment_method' => 'qris',
             'delivery_type' => 'pickup',

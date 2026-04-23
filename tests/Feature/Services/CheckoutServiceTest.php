@@ -86,7 +86,6 @@ class CheckoutServiceTest extends TestCase
         // Checkout data
         $data = [
             'customer_name' => 'John Doe',
-            'housing_block_id' => null,
             'payment_method' => 'cash',
             'delivery_type' => 'pickup'
         ];

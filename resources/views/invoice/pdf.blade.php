@@ -202,8 +202,8 @@
             <td>
                 @if ($order->delivery_type === 'delivery')
                     Antar
-                    @if ($order->housingBlock)
-                        ({{ $order->housingBlock->name }})
+                    @if ($order->block_address)
+                        ({{ $order->block_address }})
                     @endif
                 @else
                     Ambil Sendiri (Pickup)

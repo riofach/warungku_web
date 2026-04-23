@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckoutRequest;
-use App\Models\HousingBlock;
 use App\Models\Item;
 use App\Services\CartService;
 use App\Services\CheckoutService;
@@ -48,12 +47,10 @@ class CheckoutController extends Controller
         }
 
         $total = $this->cartService->total();
-        $housingBlocks = HousingBlock::orderBy('name')->get();
         
         return view('checkout.form', compact(
             'cartItems',
-            'total',
-            'housingBlocks'
+            'total'
         ));
     }
 

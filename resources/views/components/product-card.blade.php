@@ -1,6 +1,6 @@
 @props(['item'])
 
-<div class="card group relative bg-surface rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
+<div class="card group relative bg-surface rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col isolate">
     <!-- Image Container -->
     <div class="aspect-square bg-gray-100 relative overflow-hidden">
         @if($item->stock == 0)

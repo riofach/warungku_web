@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
-use App\Models\HousingBlock;
 use App\Models\Item;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -93,10 +92,9 @@ class TrackingTest extends TestCase
 
     public function test_show_page_displays_order_details(): void
     {
-        $block = HousingBlock::create(['name' => 'Blok A']);
         $order = $this->createOrder([
             'delivery_type' => 'delivery',
-            'housing_block_id' => $block->id,
+            'block_address' => 'U14/08',
             'customer_name' => 'Siti Rahayu',
             'status' => 'processing',
         ]);
@@ -105,7 +103,7 @@ class TrackingTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Siti Rahayu');
-        $response->assertSee('Blok A');
+        $response->assertSee('U14/08');
         $response->assertSee('Nasi Goreng');
         $response->assertSee('15.000');
     }
@@ -338,7 +336,7 @@ class TrackingTest extends TestCase
             'status' => 'paid',
             'customer_name' => 'Siti Nurhaliza',
         ]);
-        $order->load(['orderItems.item', 'housingBlock']);
+        $order->load(['orderItems.item']);
 
         // Render the Blade template as HTML to verify content (PDF is binary, assertSee won't work)
         $html = view('invoice.pdf', [
