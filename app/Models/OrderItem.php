@@ -16,36 +16,37 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'item_id',
+        'item_unit_id',
         'quantity',
+        'quantity_base_used',
         'price',
+        'buy_price',
         'subtotal',
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
-        'price' => 'integer',
-        'subtotal' => 'integer',
+        'quantity'           => 'integer',
+        'quantity_base_used' => 'integer',
+        'price'              => 'integer',
+        'buy_price'          => 'integer',
+        'subtotal'           => 'integer',
     ];
 
-    /**
-     * Get the order
-     */
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }
 
-    /**
-     * Get the item
-     */
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
     }
 
-    /**
-     * Get formatted subtotal
-     */
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(ItemUnit::class, 'item_unit_id');
+    }
+
     public function getFormattedSubtotalAttribute(): string
     {
         return 'Rp ' . number_format($this->subtotal, 0, ',', '.');

@@ -268,6 +268,7 @@
 </div>
 @endif
 
+    <x-unit-picker-modal />
     @stack('scripts')
 </body>
 </html>

@@ -15,81 +15,70 @@ class CheckoutService
 
     public function __construct(CartService $cartService, OrderService $orderService)
     {
-        $this->cartService = $cartService;
+        $this->cartService  = $cartService;
         $this->orderService = $orderService;
     }
 
-    /**
-     * Validate checkout can proceed
-     */
     public function validateCheckout(): array
     {
         $errors = [];
 
-        // Check if warung is open
         if (!Setting::isWarungOpen()) {
             $errors[] = 'Warung sedang tutup. Silakan kembali pada jam operasional.';
         }
 
-        // Check cart is not empty
         $cartItems = $this->cartService->get();
         if (empty($cartItems)) {
             $errors[] = 'Keranjang belanja kosong.';
         }
 
-        // Check stock availability
         foreach ($cartItems as $cartItem) {
             $item = Item::find($cartItem['id']);
             if (!$item) {
                 $errors[] = "Produk '{$cartItem['name']}' tidak ditemukan.";
-            } elseif ($item->stock < $cartItem['quantity']) {
-                $errors[] = "Stok {$item->name} tidak mencukupi. Tersedia: {$item->stock}";
+                continue;
+            }
+
+            $needed = $cartItem['quantity'] * ($cartItem['quantity_base_used'] ?? 1);
+            if ($item->stock < $needed) {
+                $label = $cartItem['unit_label'] ?? '';
+                $errors[] = "Stok {$item->name}" . ($label ? " ({$label})" : '') . " tidak mencukupi.";
             }
         }
 
         return $errors;
     }
 
-    /**
-     * Create order from cart
-     * Note: Stock is NOT reduced here - only after payment success!
-     */
     public function createOrder(array $data): Order
     {
         return DB::transaction(function () use ($data) {
             $cartItems = $this->cartService->get();
-            
+
             if (empty($cartItems)) {
                 throw new \Exception('Keranjang belanja kosong.');
             }
 
-            // 1. Generate Unique Code
             $code = $this->orderService->generateUniqueCode();
 
-            // 2. Create Order Record
-            // Assemble block_address from split inputs (e.g. U14/08)
             $blockAddress = null;
             if (!empty($data['block_number']) && !empty($data['house_number'])) {
                 $blockAddress = 'U' . $data['block_number'] . '/' . $data['house_number'];
             }
 
             $order = Order::create([
-                'code' => $code,
-                'block_address' => $blockAddress,
-                'customer_name' => $data['customer_name'],
-                'whatsapp_number' => $data['whatsapp_number'],
+                'code'           => $code,
+                'block_address'  => $blockAddress,
+                'customer_name'  => $data['customer_name'],
+                'whatsapp_number'=> $data['whatsapp_number'],
                 'payment_method' => $data['payment_method'],
-                'delivery_type' => $data['delivery_type'] ?? 'pickup',
-                'status' => Order::STATUS_PENDING,
-                'total' => 0, // Will update after calculating items
+                'delivery_type'  => $data['delivery_type'] ?? 'pickup',
+                'status'         => Order::STATUS_PENDING,
+                'total'          => 0,
             ]);
 
             $total = 0;
 
-            // 3. Process Items with Security Check
             foreach ($cartItems as $cartItem) {
-                // LOCK the item to ensure existence and price integrity
-                // Also helps preventing race conditions if stock management changes later
                 $query = Item::query();
                 if (!app()->runningUnitTests()) {
                     $query->lockForUpdate();
@@ -100,26 +89,40 @@ class CheckoutService
                     throw new \Exception("Produk '{$cartItem['name']}' tidak ditemukan atau telah dihapus.");
                 }
 
-                // CRITICAL: Use DB price, NEVER trust client/session price
-                $price = $item->sell_price;
-                $quantity = $cartItem['quantity'];
+                $itemUnitId       = $cartItem['item_unit_id'] ?? null;
+                $quantityBaseUsed = $cartItem['quantity_base_used'] ?? 1;
+                $quantity         = $cartItem['quantity'];
+
+                // Use DB price — NEVER trust session price
+                if ($itemUnitId) {
+                    $unit  = $item->activeUnits()->where('id', $itemUnitId)->first();
+                    if (!$unit) {
+                        throw new \Exception("Satuan untuk '{$item->name}' tidak ditemukan.");
+                    }
+                    $price    = $unit->sell_price;
+                    $buyPrice = $unit->buy_price;
+                } else {
+                    $price    = $item->sell_price;
+                    $buyPrice = $item->buy_price;
+                }
+
                 $subtotal = $price * $quantity;
 
                 OrderItem::create([
-                    'order_id' => $order->id,
-                    'item_id' => $item->id,
-                    'quantity' => $quantity,
-                    'price' => $price,
-                    'subtotal' => $subtotal,
+                    'order_id'           => $order->id,
+                    'item_id'            => $item->id,
+                    'item_unit_id'       => $itemUnitId,
+                    'quantity'           => $quantity,
+                    'quantity_base_used' => $quantityBaseUsed,
+                    'price'              => $price,
+                    'buy_price'          => $buyPrice,
+                    'subtotal'           => $subtotal,
                 ]);
 
                 $total += $subtotal;
             }
 
-            // 4. Update Order Total
             $order->update(['total' => $total]);
-
-            // 5. Clear Cart
             $this->cartService->clear();
 
             return $order;

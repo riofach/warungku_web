@@ -243,8 +243,6 @@
                 this.calculateLocalTotal();
                 this.saveQuantity(item); // Immediate save for clicks
             },
-
-            // Called by input @input (instant UI update)
             handleInput(item) {
                 // If empty or invalid, don't break UI, just wait
                 if (!item.quantity || item.quantity < 1) {
@@ -282,7 +280,7 @@
 
                 try {
                     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                    const response = await fetch(`/cart/${item.id}`, {
+                    const response = await fetch(`/cart/${item.cart_key}`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
@@ -328,17 +326,16 @@
                 if (!this.itemToDelete) return;
                 
                 const item = this.itemToDelete;
-                const itemId = item.id;
-                const itemIndex = this.cartItems.findIndex(i => i.id === itemId);
-                
+                const itemIndex = this.cartItems.findIndex(i => i.cart_key === item.cart_key);
+
                 if (itemIndex === -1) return;
 
                 item.loading = true;
-                this.showDeleteModal = false; // Close modal immediately or wait? Better close to show progress on item
+                this.showDeleteModal = false;
 
                 try {
                     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                    const response = await fetch(`/cart/${itemId}`, {
+                    const response = await fetch(`/cart/${item.cart_key}`, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
