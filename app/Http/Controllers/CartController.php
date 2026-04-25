@@ -15,36 +15,33 @@ class CartController extends Controller
         $this->cartService = $cartService;
     }
 
-    /**
-     * Display cart
-     */
     public function index()
     {
         $cartItems = $this->cartService->get();
-        $total = $this->cartService->total();
+        $total     = $this->cartService->total();
 
         return view('cart.index', compact('cartItems', 'total'));
     }
 
-    /**
-     * Add item to cart (JSON API)
-     */
+    /** Add item to cart. Accepts optional item_unit_id for multi-unit items. */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'item_id' => 'required|exists:items,id',
-            'quantity' => 'integer|min:1',
+            'item_id'      => 'required|exists:items,id',
+            'quantity'     => 'integer|min:1',
+            'item_unit_id' => 'nullable|exists:item_units,id',
         ]);
 
         try {
             $this->cartService->add(
                 $validated['item_id'],
-                $validated['quantity'] ?? 1
+                $validated['quantity'] ?? 1,
+                $validated['item_unit_id'] ?? null,
             );
 
             return response()->json([
-                'success' => true,
-                'message' => 'Ditambahkan ke keranjang',
+                'success'    => true,
+                'message'    => 'Ditambahkan ke keranjang',
                 'cart_count' => $this->cartService->count(),
             ]);
         } catch (\Exception $e) {
@@ -54,60 +51,46 @@ class CartController extends Controller
             ], 400);
         }
     }
-    
-    /**
-     * Add item to cart (Form Submit - Legacy support if needed)
-     */
+
     public function add(Request $request)
     {
-        // For backwards compatibility, might redirect
         $response = $this->store($request);
-        
-        // If it returns JSON, we might want to decode it and redirect if not AJAX
-        // But for now, let's just use store logic and return redirect if not ajax
+
         if ($request->ajax() || $request->wantsJson()) {
             return $response;
         }
-        
+
         $data = $response->getData();
-        if ($data->success) {
-            return back()->with('success', $data->message);
-        } else {
-            return back()->with('error', $data->message);
-        }
+        return $data->success
+            ? back()->with('success', $data->message)
+            : back()->with('error', $data->message);
     }
 
-    /**
-     * Update cart item quantity
-     */
-    public function update(Request $request, string $itemId)
+    /** Update quantity. $cartKey = item_id or "{item_id}_{unit_id}" */
+    public function update(Request $request, string $cartKey)
     {
         $request->validate([
             'quantity' => 'required|integer|min:1',
         ]);
 
         try {
-            $this->cartService->update($itemId, $request->quantity);
+            $this->cartService->update($cartKey, $request->quantity);
 
-            // Calculate new totals for JSON response
-            $itemSubtotal = 0;
-            $cartItems = $this->cartService->get();
-            $cartTotal = $this->cartService->total();
-            
-            // Get subtotal for specific item
-            if (isset($cartItems[$itemId])) {
-                 $itemSubtotal = $cartItems[$itemId]['price'] * $cartItems[$itemId]['quantity'];
-            }
+            $cartItems    = $this->cartService->get();
+            $cartTotal    = $this->cartService->total();
+            $itemSubtotal = isset($cartItems[$cartKey])
+                ? $cartItems[$cartKey]['price'] * $cartItems[$cartKey]['quantity']
+                : 0;
 
             if ($request->wantsJson()) {
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Keranjang diperbarui',
-                    'cart_count' => $this->cartService->count(),
-                    'item_subtotal' => $itemSubtotal,
+                    'success'                 => true,
+                    'message'                 => 'Keranjang diperbarui',
+                    'cart_count'              => $this->cartService->count(),
+                    'item_subtotal'           => $itemSubtotal,
                     'item_subtotal_formatted' => 'Rp ' . number_format($itemSubtotal, 0, ',', '.'),
-                    'cart_total' => $cartTotal,
-                    'cart_total_formatted' => 'Rp ' . number_format($cartTotal, 0, ',', '.')
+                    'cart_total'              => $cartTotal,
+                    'cart_total_formatted'    => 'Rp ' . number_format($cartTotal, 0, ',', '.'),
                 ]);
             }
 
@@ -120,46 +103,33 @@ class CartController extends Controller
         }
     }
 
-    /**
-     * Remove item from cart
-     */
-    public function destroy(Request $request, string $itemId)
+    /** Remove item. $cartKey = item_id or "{item_id}_{unit_id}" */
+    public function destroy(Request $request, string $cartKey)
     {
-        $this->cartService->remove($itemId);
+        $this->cartService->remove($cartKey);
 
         if ($request->wantsJson()) {
-             // Calculate new totals
             $cartTotal = $this->cartService->total();
-
             return response()->json([
-                'success' => true, 
-                'message' => 'Item dihapus',
-                'cart_count' => $this->cartService->count(),
-                'cart_total' => $cartTotal,
-                'cart_total_formatted' => 'Rp ' . number_format($cartTotal, 0, ',', '.')
+                'success'              => true,
+                'message'              => 'Item dihapus',
+                'cart_count'           => $this->cartService->count(),
+                'cart_total'           => $cartTotal,
+                'cart_total_formatted' => 'Rp ' . number_format($cartTotal, 0, ',', '.'),
             ]);
         }
 
         return back()->with('success', 'Item dihapus dari keranjang');
     }
 
-    /**
-     * Clear cart
-     */
     public function clear()
     {
         $this->cartService->clear();
-
         return redirect()->route('shop.index')->with('success', 'Keranjang dikosongkan');
     }
-    
-    /**
-     * Get cart count (JSON API)
-     */
+
     public function count(): JsonResponse
     {
-        return response()->json([
-            'count' => $this->cartService->count(),
-        ]);
+        return response()->json(['count' => $this->cartService->count()]);
     }
 }

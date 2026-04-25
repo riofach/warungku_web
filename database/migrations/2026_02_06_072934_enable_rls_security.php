@@ -22,6 +22,8 @@ return new class extends Migration
             'order_items',
             'transactions',
             'transaction_items',
+            'item_units',
+            'purchases',
             'settings',
             // Laravel system tables
             'migrations',
@@ -49,6 +51,9 @@ return new class extends Migration
             'orders' => ['Public Insert Orders', 'Admin Read All Orders', 'Public Read Own Order'],
             'order_items' => ['Public Insert Order Items', 'Admin Read Order Items'],
             'transactions' => ['Admin All Transactions'],
+            'transaction_items' => ['Admin All Transaction Items'],
+            'item_units' => ['Public Read Item Units', 'Admin Write Item Units'],
+            'purchases' => ['Admin All Purchases'],
             'settings' => ['Public Read Settings', 'Admin Write Settings'],
             'users' => ['Admin All Users']
         ];
@@ -89,6 +94,13 @@ return new class extends Migration
         // --- Settings (Public Read for some, Admin Write) ---
         DB::statement("CREATE POLICY \"Public Read Settings\" ON public.settings FOR SELECT USING (true)");
         DB::statement("CREATE POLICY \"Admin Write Settings\" ON public.settings FOR ALL USING (auth.role() = 'authenticated')");
+
+        // --- Item Units (Public Read for POS, Admin Write) ---
+        DB::statement("CREATE POLICY \"Public Read Item Units\" ON public.item_units FOR SELECT USING (true)");
+        DB::statement("CREATE POLICY \"Admin Write Item Units\" ON public.item_units FOR ALL USING (auth.role() = 'authenticated')");
+
+        // --- Purchases (Admin Only) ---
+        DB::statement("CREATE POLICY \"Admin All Purchases\" ON public.purchases FOR ALL USING (auth.role() = 'authenticated')");
 
         // --- Users (Admin Management) ---
         DB::statement("CREATE POLICY \"Admin All Users\" ON public.users FOR ALL USING (auth.role() = 'authenticated')");

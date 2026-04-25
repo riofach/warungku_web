@@ -70,6 +70,8 @@ class PaymentService
             : 'https://api-prod.duitku.com/api/merchant/transactionStatus';
 
         try {
+            $bodySignature = md5($merchantCode . $order->code . $apiKey);
+
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'x-duitku-signature' => $signature,
@@ -78,6 +80,7 @@ class PaymentService
             ])->post($url, [
                 'merchantCode' => $merchantCode,
                 'merchantOrderId' => $order->code,
+                'signature' => $bodySignature,
             ]);
 
             if ($response->successful()) {

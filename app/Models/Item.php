@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Item extends Model
@@ -23,67 +24,75 @@ class Item extends Model
         'stock_threshold',
         'image_url',
         'is_active',
+        'has_units',
+        'base_unit',
     ];
 
     protected $casts = [
-        'buy_price' => 'integer',
-        'sell_price' => 'integer',
-        'stock' => 'integer',
+        'buy_price'       => 'integer',
+        'sell_price'      => 'integer',
+        'stock'           => 'integer',
         'stock_threshold' => 'integer',
-        'is_active' => 'boolean',
+        'is_active'       => 'boolean',
+        'has_units'       => 'boolean',
     ];
 
-    /**
-     * Get the category of this item
-     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Check if stock is safe
-     */
+    public function units(): HasMany
+    {
+        return $this->hasMany(ItemUnit::class)->orderBy('quantity_base', 'desc');
+    }
+
+    public function activeUnits(): HasMany
+    {
+        return $this->hasMany(ItemUnit::class)->where('is_active', true)->orderBy('quantity_base', 'desc');
+    }
+
     public function isStockSafe(): bool
     {
         return $this->stock > $this->stock_threshold;
     }
 
-    /**
-     * Check if stock is low (warning)
-     */
     public function isStockLow(): bool
     {
         return $this->stock > 0 && $this->stock <= $this->stock_threshold;
     }
 
-    /**
-     * Check if out of stock
-     */
     public function isOutOfStock(): bool
     {
         return $this->stock <= 0;
     }
 
-    /**
-     * Get formatted price
-     */
+    /** Display stock: for gram items shows "X,X Kg", others show raw integer + unit */
+    public function displayStock(): string
+    {
+        if ($this->has_units && $this->base_unit === 'gram') {
+            return number_format($this->stock / 1000, 1, ',', '.') . ' Kg';
+        }
+        return $this->stock . ' ' . ($this->base_unit ?? 'pcs');
+    }
+
+    /** Max qty available for a given unit variant */
+    public function availableForUnit(int $quantityBase): int
+    {
+        if ($quantityBase <= 0) return 0;
+        return (int) floor($this->stock / $quantityBase);
+    }
+
     public function getFormattedPriceAttribute(): string
     {
         return 'Rp ' . number_format($this->sell_price, 0, ',', '.');
     }
 
-    /**
-     * Scope for active items only
-     */
     public function scopeActive($query)
     {
         return $query->whereRaw('is_active = true');
     }
 
-    /**
-     * Scope for available items (active and in stock)
-     */
     public function scopeAvailable($query)
     {
         return $query->active()->where('stock', '>', 0);
