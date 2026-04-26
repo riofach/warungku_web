@@ -4,12 +4,12 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "8000:80"
     environment:
-      APP_NAME: WarungKu
+      APP_NAME: WarungLuthfan
       APP_ENV: production
       APP_KEY: ${APP_KEY}
-      APP_DEBUG: false
+      APP_DEBUG: "false"
       APP_URL: ${APP_URL}
       LOG_CHANNEL: stderr
       LOG_LEVEL: error

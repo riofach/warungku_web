@@ -15,6 +15,7 @@ RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
+    gettext \
     libpq-dev \
     libzip-dev \
     zip \
@@ -61,7 +62,6 @@ RUN composer dump-autoload --optimize --no-dev
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 storage bootstrap/cache
 
-COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
