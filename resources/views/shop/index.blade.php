@@ -7,7 +7,7 @@
     <!-- Hero Section -->
     <div class="bg-gradient-to-r from-primary to-blue-700 rounded-2xl p-6 md:p-8 mb-6 text-white shadow-lg relative overflow-hidden">
         <div class="relative z-10">
-            <h1 class="text-2xl md:text-3xl font-bold mb-2">Selamat datang di WarungLuthfan! 👋</h1>
+            <h1 class="text-2xl md:text-3xl font-bold mb-2">Selamat datang di Warung Luthfan! 👋</h1>
             <p class="text-white/90 text-sm md:text-base mb-4">Belanja kebutuhan harian Anda dengan mudah.</p>
             <div class="flex flex-wrap items-center gap-2">
                 <span class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs md:text-sm font-medium flex items-center gap-1">
